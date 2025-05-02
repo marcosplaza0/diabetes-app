@@ -2,7 +2,7 @@
 
 🌍 **Idiomas disponibles**: [English](README.md) | [Español](README.es.md)
 
-[![Licencia: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 Este es el **repositorio de código** de la *App de Gestión de la Diabetes*, desarrollada como proyecto final del ciclo de Desarrollo de Aplicaciones Multiplataforma. La aplicación está construida con **Flutter** y está diseñada para ayudar a las personas con diabetes a registrar, gestionar y comprender mejor su salud.
 
@@ -47,10 +47,10 @@ Este es el **repositorio de código** de la *App de Gestión de la Diabetes*, de
 
 ---
 
-## ✅ License
+## ✅ Licencia
 
-Este repositorio está licenciado bajo la [MIT License](https://opensource.org/license/mit).
-Eres libre de usar, modificar y distribuir este código siempre que se mantenga la atribución adecuada.
+Este proyecto está licenciado bajo la [Licencia Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
+Puedes usar, modificar y distribuir este software, siempre que incluyas la atribución correspondiente y cumplas con los términos de la licencia.
 
 ---
 

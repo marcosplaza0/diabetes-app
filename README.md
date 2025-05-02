@@ -2,7 +2,7 @@
 
 🌍 **Available languages**: [English](README.md) | [Español](README.es.md)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 This is the **code repository** for the *Diabetes Management App*, created as a final-year project for the Multiplatform App Development program. The app is built with **Flutter** and designed to help individuals with diabetes track, manage, and better understand their health.
 
@@ -49,7 +49,7 @@ This is the **code repository** for the *Diabetes Management App*, created as a 
 
 ## ✅ License
 
-This repository is licensed under the [MIT License](https://opensource.org/license/mit).
-You are free to use, modify, and distribute this code with proper attribution.
+This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
+You are free to use, modify, and distribute this software, provided that you include proper attribution and comply with the terms of the license.
 
 ---
