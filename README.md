@@ -43,7 +43,7 @@ This is the **code repository** for the *Diabetes Management App*, created as a 
 
 ## 🔗 Related Repositories
 
-    [📘 Documentation Repository](https://github.com/marcosplaza0/diabetes-app-docs)
+- [📘 Documentation Repository](https://github.com/marcosplaza0/diabetes-app-docs)
 
 ---
 
