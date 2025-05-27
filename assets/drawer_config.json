@@ -34,18 +34,6 @@
   },
   {
     "type": "item",
-    "label": "Tiempo en rango",
-    "icon": "timeline",
-    "route": "/data/time_in_range"
-  },
-  {
-    "type": "item",
-    "label": "Niveles promedios",
-    "icon": "bar_chart",
-    "route": "/data/average_levels"
-  },
-  {
-    "type": "item",
     "label": "Tendencias",
     "icon": "trending_up",
     "route": "/data/trends"
@@ -55,18 +43,6 @@
     "label": "Grafico de tendencias",
     "icon": "show_chart",
     "route": "/data/trend_graph"
-  },
-  {
-    "type": "item",
-    "label": "Hiperglucemias",
-    "icon": "arrow_upward",
-    "route": "/data/hyperglycemia"
-  },
-  {
-    "type": "item",
-    "label": "Hipoglucemias",
-    "icon": "arrow_downward",
-    "route": "/data/hypoglycemia"
   },
   {
     "type": "padding",

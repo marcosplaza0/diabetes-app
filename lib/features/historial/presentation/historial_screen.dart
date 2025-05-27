@@ -1,25 +1,26 @@
-// Archivo: food_injections.dart
-// Descripción: Pantalla que muestra y gestiona los registros de comidas e inyecciones del usuario.
-// Permite navegar entre diferentes fechas para ver y editar los registros.
+// Archivo: historial_screen.dart
+// Descripción: Pantalla que muestra el historial de registros del usuario.
+// Permite navegar entre diferentes fechas para ver los registros históricos.
 
 import 'package:flutter/material.dart';
-import '../layout/main_layout.dart';
-import '../historial/widgets/date_navigator_widget.dart'; // Widget para navegación de fechas
-import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart'; // Necesario para inicializar el formato de fecha
 
-/// Widget que representa la pantalla de comidas e inyecciones de la aplicación.
-/// Permite al usuario ver y gestionar los registros de comidas e inyecciones organizados por fecha.
-class FoodInjectionsScreen extends StatefulWidget {
-  const FoodInjectionsScreen({super.key});
+import 'package:diabetes_2/core/layout/main_layout.dart';
+import 'package:diabetes_2/features/historial/widgets/date_navigator_widget.dart'; // Widget para navegación de fechas
+import 'package:diabetes_2/features/historial/widgets/daily_log_list_widget.dart'; // Ajusta la ruta si es necesario
+
+/// Widget que representa la pantalla de historial de la aplicación.
+/// Permite al usuario ver y navegar por los registros históricos organizados por fecha.
+class HistorialScreen extends StatefulWidget {
+  const HistorialScreen({super.key});
 
   @override
-  State<FoodInjectionsScreen> createState() => _FoodInjectionsScreenState();
+  State<HistorialScreen> createState() => _HistorialScreenState();
 }
 
-/// Estado interno para la pantalla de comidas e inyecciones.
+/// Estado interno para la pantalla de historial.
 /// Gestiona la fecha seleccionada y la inicialización del formato de fecha.
-class _FoodInjectionsScreenState extends State<FoodInjectionsScreen> {
+class _HistorialScreenState extends State<HistorialScreen> {
   /// Fecha actualmente seleccionada para mostrar registros
   late DateTime _selectedDate;
 
@@ -62,25 +63,25 @@ class _FoodInjectionsScreenState extends State<FoodInjectionsScreen> {
       // La nueva fecha del navegador debe normalizarse (tiempo a medianoche)
       _selectedDate = DateTime(newDate.year, newDate.month, newDate.day);
       // Típicamente aquí se desencadenaría la carga de datos para la nueva fecha, por ejemplo:
-      // _cargarRegistrosParaFecha(_selectedDate);
+      // _cargarNotasParaFecha(_selectedDate);
     });
   }
 
   @override
-  /// Construye la interfaz de usuario de la pantalla de comidas e inyecciones.
+  /// Construye la interfaz de usuario de la pantalla de historial.
   /// Muestra un indicador de carga mientras se inicializa el formato de fecha,
-  /// y luego muestra el navegador de fechas y el contenido de comidas e inyecciones.
+  /// y luego muestra el navegador de fechas y el contenido del historial.
   Widget build(BuildContext context) {
     if (!_isDateFormattingInitialized) {
       // Muestra un indicador de carga hasta que el formato de fecha esté listo
       return MainLayout(
-        title: 'Comida / Inyecciones',
+        title: 'Historial',
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return MainLayout(
-      title: 'Comida / Inyecciones',
+      title: 'Historial',
       body: Column(
         children: [
           // Widget de selección y navegación de fechas
@@ -91,20 +92,9 @@ class _FoodInjectionsScreenState extends State<FoodInjectionsScreen> {
             lastDate: DateTime.now(),       // Fecha máxima seleccionable (hoy)
           ),
 
-          // Contenedor para los registros de comidas e inyecciones (usa _selectedDate del estado)
+          // Contenedor para las notas (usa _selectedDate del estado de esta pantalla)
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-              ),
-              child: Center(
-                child: Text(
-                  // Ejemplo de uso de la fecha seleccionada
-                    'Aquí irán los registros del día: ${DateFormat('dd/MM/yyyy', 'es_ES').format(_selectedDate)}',
-                    style: const TextStyle(fontSize: 16)
-                ),
-              ),
-            ),
+            child: DailyLogListWidget(selectedDate: _selectedDate),
           ),
         ],
       ),

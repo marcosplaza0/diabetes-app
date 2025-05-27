@@ -1,25 +1,7 @@
-// Archivo: app_colors.dart
-// Descripción: Define los temas claro y oscuro para la aplicación utilizando FlexColorScheme.
-// Este archivo contiene todas las configuraciones de colores y estilos para la interfaz de usuario.
-
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// La clase [AppTheme] define los temas claro y oscuro para la aplicación.
-///
-/// Configuración de tema para el paquete FlexColorScheme versión 8.
-/// Utiliza la misma versión principal del paquete flex_color_scheme. Si utilizas una
-/// versión menor, algunas propiedades podrían no ser compatibles.
-/// En ese caso, elimínalas después de copiar este tema a tu
-/// aplicación o actualiza el paquete a la versión 8.2.0.
-///
-/// Úsalo en un [MaterialApp] de esta manera:
-///
-/// MaterialApp(
-///   theme: AppTheme.light,
-///   darkTheme: AppTheme.dark,
-/// );
 abstract final class AppTheme {
   /// Tema claro definido con FlexColorScheme.
   /// Contiene todas las configuraciones de colores y estilos para el modo claro de la aplicación.
