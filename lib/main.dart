@@ -9,37 +9,50 @@ import 'package:diabetes_2/core/utils/go_router.dart';
 import 'package:diabetes_2/core/theme/app_colors.dart';
 
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:diabetes_2/data/transfer_objects/logs.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:typed_data';
+import 'package:diabetes_2/data/models/logs/logs.dart';
+import 'package:diabetes_2/data/models/profile/user_profile_data.dart';
+import 'package:diabetes_2/core/services/image_cache_service.dart';
+import 'package:provider/provider.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/theme/theme_provider.dart';
+
 const String mealLogBoxName = 'meal_logs';
 const String overnightLogBoxName = 'overnight_logs';
-late Box<Uint8List> avatarCacheBox;
+const String userProfileBoxName = "user_profile_box";
 
 /// Función principal que inicia la aplicación
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Hive.initFlutter('diabetesAppData');
 
   Hive.registerAdapter(MealLogAdapter());
   Hive.registerAdapter(OvernightLogAdapter());
+  Hive.registerAdapter(UserProfileDataAdapter());
 
   await Hive.openBox<MealLog>(mealLogBoxName);
   await Hive.openBox<OvernightLog>(overnightLogBoxName);
-  final appDocumentDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDir.path);
-  avatarCacheBox = await Hive.openBox<Uint8List>('avatarCache');
+  await Hive.openBox<UserProfileData>(userProfileBoxName);
+
+  final themeProvider = ThemeProvider();
+  final imageCacheService = ImageCacheService();
+  await imageCacheService.init();
 
   await Supabase.initialize(
     anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwanRkZHl5YnhybHhmamhzd256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyOTQwMDAsImV4cCI6MjA2Mzg3MDAwMH0.ABU_Vfh6h9C8iF1MSxAdTyJXX7LufSpQWX58opMKYQ0",
     url: "https://fpjtddyybxrlxfjhswnz.supabase.co",
   );
 
-  runApp(const DiabetesApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => themeProvider),
+        Provider<ImageCacheService>(create: (_) => imageCacheService),
+      ],
+      child: const DiabetesApp(),
+    )
+  );
 }
 
 final supabase = Supabase.instance.client;
@@ -52,11 +65,12 @@ class DiabetesApp extends StatelessWidget {
   @override
   /// Construye la interfaz de usuario principal de la aplicación
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp.router(
       title: 'App Diabetes',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.light,
+      themeMode: themeProvider.themeMode,
       routerConfig: GoRouterUtils.router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

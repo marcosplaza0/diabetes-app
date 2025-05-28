@@ -42,11 +42,12 @@ dependencies:
   go_router: ^15.1.2
   intl: ^0.20.2
   nfc_manager: ^3.3.0
-  provider: any
+  provider: ^6.1.5
   supabase_flutter: ^2.9.0
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   http: ^1.4.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

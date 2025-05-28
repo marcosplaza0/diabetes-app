@@ -15,6 +15,7 @@ import 'package:diabetes_2/features/notes/presentation/log_screen.dart';
 import 'package:diabetes_2/core/auth/presentation/login_page.dart';
 import 'package:diabetes_2/core/auth/presentation/register_page.dart';
 import 'package:diabetes_2/core/auth/presentation/account_page.dart';
+import 'package:diabetes_2/features/settings/presentation/settings_screen.dart';
 
 
 /// Clase de utilidad que proporciona la configuración del enrutador para la navegación en la aplicación
@@ -116,6 +117,13 @@ class GoRouterUtils {
           builder: (BuildContext context, GoRouterState state) {
             return FoodInjectionsScreen();
           }
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (BuildContext context, GoRouterState state) {
+          return SettingsScreen();
+        }
       ),
     ]
   );

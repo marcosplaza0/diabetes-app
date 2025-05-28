@@ -8,13 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart'; // Para la navegación
 
 // Asegúrate que estas rutas sean correctas según tu estructura de proyecto
-import 'package:diabetes_2/data/transfer_objects/logs.dart';
-// Asumimos que mealLogBoxName y overnightLogBoxName están definidos en tu main.dart o en un archivo de constantes importable.
-// Si los definiste en main.dart y no son accesibles globalmente, puedes pasarlos como parámetros
-// o definirlos en un archivo de constantes e importarlo aquí y en main.dart.
-// Por ahora, asumiré que están disponibles globalmente o los puedes importar desde una ubicación centralizada.
-// Ejemplo: import 'package:diabetes_2/core/constants/hive_box_names.dart';
-// O, si están en main.dart y los exportaste o son globales:
+import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:diabetes_2/main.dart';
 
 
@@ -115,8 +109,6 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                 'logKeyString': logKeyString,
               },
             );
-            // Alternativamente, si prefieres usar el path directamente:
-            // context.push('/diabetes-log/edit/meal/$logKeyString');
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Error: No se pudo obtener la clave de la nota."), backgroundColor: Colors.orange)
@@ -198,7 +190,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
         onTap: () {
           if (log.key != null) {
             final String logKeyString = log.key.toString();
-            context.go('/diabetes-log/edit/overnight/$logKeyString');
+            context.push('/diabetes-log/edit/overnight/$logKeyString');
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Error: No se pudo obtener la clave de la nota."), backgroundColor: Colors.orange)
@@ -214,7 +206,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: theme.colorScheme.secondaryContainer.withOpacity(0.7),
+                    backgroundColor: theme.colorScheme.secondaryContainer.withValues(alpha:0.7),
                     radius: 18,
                     child: Icon(Icons.bedtime_outlined, color: theme.colorScheme.onSecondaryContainer, size: 20),
                   ),

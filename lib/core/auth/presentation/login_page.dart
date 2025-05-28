@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:diabetes_2/core/auth/auth_service.dart'; // Asegúrate que esta ruta es correcta
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase_auth; // Para AuthException
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,8 +11,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _authService = AuthService(); // Renombrado para seguir convención
-  final _formKey = GlobalKey<FormState>(); // Clave para el Form
+  final _authService = AuthService();
+  final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,7 +26,73 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _login() async { // Cambiado a Future<void> y _login
+  // FUNCIÓN PARA MOSTRAR SNACKBAR DE ERROR PERSONALIZADO
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: colorScheme.onError),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onError, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 4),
+        elevation: 4.0,
+      ),
+    );
+  }
+
+  // FUNCIÓN PARA PROCESAR EL MENSAJE DE ERROR
+  String _processErrorMessage(dynamic error) {
+    if (error is supabase_auth.AuthException) {
+      switch (error.message.toLowerCase()) {
+        case 'invalid login credentials':
+          return 'Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos e inténtalo de nuevo.';
+        case 'email not confirmed':
+          return 'Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada para el enlace de confirmación.';
+        case 'user not found':
+          return 'No se encontró un usuario con ese correo electrónico.';
+        case 'network error':
+        case 'failed to fetch':
+          return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
+        default:
+          return error.message.isNotEmpty ? error.message : 'Ocurrió un error de autenticación.';
+      }
+    }
+
+    String errorMessage = error.toString();
+    if (errorMessage.startsWith("Exception: ")) {
+      errorMessage = errorMessage.replaceFirst("Exception: ", "");
+    }
+
+    if (errorMessage.toLowerCase().contains('network') ||
+        errorMessage.toLowerCase().contains('socket') ||
+        errorMessage.toLowerCase().contains('failed host lookup')) {
+      return 'Error de conexión. Verifica tu internet e inténtalo de nuevo.';
+    }
+
+    return errorMessage.isNotEmpty ? errorMessage : 'Ha ocurrido un error desconocido.';
+  }
+
+  Future<void> _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isLoading = true;
@@ -35,20 +102,12 @@ class _LoginPageState extends State<LoginPage> {
       final password = _passwordController.text.trim();
 
       try {
-        // Simulación de login, reemplaza con tu lógica real
-        // await Future.delayed(const Duration(seconds: 2)); // Simula espera
         await _authService.signInWithEmailAndPassword(email, password);
-        // Navegación exitosa (GoRouter u otro) se manejaría por el AuthWrapper o similar
-        // if (mounted) context.go('/home'); // Ejemplo
+        // La navegación en caso de éxito se maneja externamente (ej. AuthWrapper)
+        // if (mounted) context.go('/home');
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString().replaceFirst("Exception: ", "")), // Limpia un poco el mensaje
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
+        final String friendlyErrorMessage = _processErrorMessage(e);
+        _showErrorSnackBar(friendlyErrorMessage);
       } finally {
         if (mounted) {
           setState(() {
@@ -73,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
             end: Alignment.bottomRight,
             colors: [
               colorScheme.primary.withOpacity(0.1),
-              colorScheme.surface, // Usar surface para el color principal del fondo
+              colorScheme.surface,
               colorScheme.surface,
               colorScheme.secondary.withOpacity(0.1),
             ],
@@ -88,15 +147,14 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // Logo o Nombre de la App
                   Icon(
-                    Icons.monitor_heart_outlined, // Icono relacionado con la salud/diabetes
+                    Icons.monitor_heart_outlined,
                     size: 80,
                     color: colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Diabetes App', // Nombre de tu app
+                    'Diabetes App',
                     textAlign: TextAlign.center,
                     style: textTheme.headlineLarge?.copyWith(
                       color: colorScheme.primary,
@@ -110,8 +168,6 @@ class _LoginPageState extends State<LoginPage> {
                     style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 40),
-
-                  // Formulario dentro de una tarjeta
                   Card(
                     elevation: 8.0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
@@ -121,7 +177,6 @@ class _LoginPageState extends State<LoginPage> {
                         key: _formKey,
                         child: Column(
                           children: <Widget>[
-                            // Campo de Email
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -142,8 +197,6 @@ class _LoginPageState extends State<LoginPage> {
                               },
                             ),
                             const SizedBox(height: 20),
-
-                            // Campo de Contraseña
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
@@ -173,21 +226,7 @@ class _LoginPageState extends State<LoginPage> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 12),
-
-                            // Opcional: Olvidaste tu contraseña
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  // TODO: Implementar lógica de "Olvidé mi contraseña"
-                                },
-                                child: Text('¿Olvidaste tu contraseña?', style: TextStyle(color: colorScheme.secondary)),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Botón de Login
+                            const SizedBox(height: 20),
                             _isLoading
                                 ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
                                 : ElevatedButton.icon(
@@ -199,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                                 padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                                 elevation: 4.0,
-                                minimumSize: const Size(double.infinity, 50), // Ancho completo
+                                minimumSize: const Size(double.infinity, 50),
                               ),
                             ),
                           ],
@@ -208,15 +247,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Opcional: Registrarse
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text('¿No tienes una cuenta?', style: TextStyle(color: colorScheme.onSurfaceVariant)),
                       TextButton(
                         onPressed: () {
-                          context.push('/register'); // Ejemplo con GoRouter
+                          context.go('/register');
                         },
                         child: Text('Regístrate', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
                       ),

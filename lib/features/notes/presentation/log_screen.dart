@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:diabetes_2/data/transfer_objects/logs.dart';
+import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
@@ -43,7 +43,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
   // Estado para fecha y hora seleccionadas
   DateTime _selectedLogDate = DateTime.now();
   TimeOfDay _selectedMealStartTime = TimeOfDay.now();
-  TimeOfDay _selectedBedTime = const TimeOfDay(hour: 22, minute: 0);
+  TimeOfDay _selectedBedTime = TimeOfDay.now();
 
   // ... (Controladores de TextEditingController como antes) ...
   final _mealFormKey = GlobalKey<FormState>();
@@ -91,9 +91,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     }
 
     if (logToEdit == null) {
-      // Manejar error: log no encontrado
-      print("Error: No se encontró el log con la clave ${widget.logKey}");
-      // Podrías mostrar un SnackBar y/o navegar hacia atrás.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Error: Nota no encontrada."), backgroundColor: Colors.red)
@@ -412,22 +409,28 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     try {
       String message;
       if (_isEditMode) {
-        await _mealLogBox.put(widget.logKey, mealLog); // Usar .put() para actualizar
+        await _mealLogBox.put(widget.logKey, mealLog);
         message = 'Nota de comida actualizada en Hive';
       } else {
         await _mealLogBox.add(mealLog);
         message = 'Nota de comida guardada en Hive';
       }
-      print(message + ': $mealLog');
+      print('$message: $mealLog');
+
+      if (!mounted) return; // <-- ADD THIS CHECK
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
-      _clearMealForm();
-      if (Navigator.canPop(context)) { // Volver atrás después de editar
+      _clearMealForm(); // This is fine as it doesn't use context
+
+      if (Navigator.canPop(context)) {
+        if (!mounted) return; // <-- ADD THIS CHECK (before Navigator)
         Navigator.pop(context);
       }
-    } catch (e) { /* ... (manejo de error) ... */
+    } catch (e) {
       print('Error al guardar/actualizar MealLog en Hive: $e');
+      if (!mounted) return; // <-- ADD THIS CHECK
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),
       );
@@ -464,22 +467,28 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     try {
       String message;
       if (_isEditMode) {
-        await _overnightLogBox.put(widget.logKey, overnightLog); // Usar .put() para actualizar
+        await _overnightLogBox.put(widget.logKey, overnightLog);
         message = 'Nota de noche actualizada en Hive';
       } else {
         await _overnightLogBox.add(overnightLog);
         message = 'Nota de noche guardada en Hive';
       }
-      print(message + ': $overnightLog');
+      print('$message: $overnightLog');
+
+      if (!mounted) return; // <-- ADD THIS CHECK
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
-      _clearOvernightForm();
-      if (Navigator.canPop(context)) { // Volver atrás después de editar
+      _clearOvernightForm(); // This is fine
+
+      if (Navigator.canPop(context)) {
+        if (!mounted) return; // <-- ADD THIS CHECK (before Navigator)
         Navigator.pop(context);
       }
-    } catch (e) { /* ... (manejo de error) ... */
+    } catch (e) {
       print('Error al guardar/actualizar OvernightLog en Hive: $e');
+      if (!mounted) return; // <-- ADD THIS CHECK
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),
       );
@@ -508,7 +517,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     _afterWakeUpBloodSugarController.clear();
     if (!_isEditMode) { // Solo resetea la hora si no está en modo edición
       setState(() {
-        _selectedBedTime = const TimeOfDay(hour: 22, minute: 0);
+        _selectedBedTime = TimeOfDay.now();
       });
     }
   }

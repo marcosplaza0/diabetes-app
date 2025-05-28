@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:diabetes_2/core/auth/auth_service.dart'; // Asegúrate que esta ruta es correcta
 import 'package:go_router/go_router.dart'; // Para la navegación
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase_auth; // Para AuthException
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -29,6 +30,111 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  // FUNCIÓN PARA MOSTRAR SNACKBAR DE ERROR PERSONALIZADO (REUTILIZADA)
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: colorScheme.onError),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onError, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 4),
+        elevation: 4.0,
+      ),
+    );
+  }
+
+  // NUEVA FUNCIÓN PARA MOSTRAR SNACKBAR DE ÉXITO PERSONALIZADO
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+
+    final theme = Theme.of(context);
+    // Usaremos colores primarios o de éxito definidos en el tema si los tienes,
+    // o un verde estándar como fallback.
+    final successBackgroundColor = Colors.green.shade700; // Puedes ajustar esto
+    final onSuccessColor = Colors.white; // Color para el texto y el icono sobre el fondo de éxito
+
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_outline_rounded, color: onSuccessColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: onSuccessColor, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: successBackgroundColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 6), // Un poco más largo para mensajes informativos importantes
+        elevation: 4.0,
+      ),
+    );
+  }
+
+  // FUNCIÓN PARA PROCESAR EL MENSAJE DE ERROR (ADAPTADA PARA REGISTRO)
+  String _processErrorMessage(dynamic error) {
+    if (error is supabase_auth.AuthException) {
+      // Mensajes específicos para errores de registro de Supabase
+      // Los mensajes exactos de Supabase pueden variar. Revisa tu consola para ajustarlos.
+      String errorMessage = error.message.toLowerCase();
+      if (errorMessage.contains('user already registered') || errorMessage.contains('user already exists')) {
+        return 'Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.';
+      }
+      if (errorMessage.contains('email rate limit exceeded')) {
+        return 'Se han enviado demasiadas solicitudes para este correo. Por favor, inténtalo más tarde.';
+      }
+      if (errorMessage.contains('password should be at least 6 characters')) {
+        return 'La contraseña es demasiado corta. Debe tener al menos 6 caracteres.';
+      }
+      // Fallback para otros errores de AuthException
+      return error.message.isNotEmpty ? error.message : 'Ocurrió un error durante el registro.';
+    }
+
+    // Manejo para otros tipos de errores
+    String generalErrorMessage = error.toString();
+    if (generalErrorMessage.startsWith("Exception: ")) {
+      generalErrorMessage = generalErrorMessage.replaceFirst("Exception: ", "");
+    }
+
+    if (generalErrorMessage.toLowerCase().contains('network') ||
+        generalErrorMessage.toLowerCase().contains('socket') ||
+        generalErrorMessage.toLowerCase().contains('failed host lookup')) {
+      return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
+    }
+
+    return generalErrorMessage.isNotEmpty ? generalErrorMessage : 'Ha ocurrido un error desconocido.';
+  }
+
   Future<void> _signUp() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
@@ -45,32 +151,23 @@ class _RegisterPageState extends State<RegisterPage> {
       await _authService.signUpWithEmailAndPassword(email, password);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            // Mensaje actualizado para reflejar la necesidad de verificación
-            content: Text('¡Registro casi completo! Se ha enviado un correo de confirmación a $email. Por favor, verifica tu email para activar tu cuenta.'),
-            backgroundColor: Colors.green, // O usa Theme.of(context).colorScheme.primary
-            duration: const Duration(seconds: 5), // Duración más larga para que el usuario pueda leerlo
-          ),
-        );
+        // USA LA NUEVA FUNCIÓN DE SNACKBAR DE ÉXITO
+        _showSuccessSnackBar(
+            '¡Registro casi completo! Se ha enviado un correo de confirmación a $email. Por favor, verifica tu email para activar tu cuenta.');
 
-        // Después de mostrar el mensaje, puedes llevar al usuario a la página de login
-        // o simplemente cerrar esta página si fue abierta sobre la de login.
+        // Retraso opcional antes de navegar para dar tiempo a leer el SnackBar
+        await Future.delayed(const Duration(seconds: 1));
+
         if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop(); // Vuelve a la pantalla anterior (probablemente login)
+          Navigator.of(context).pop();
         } else {
-          context.go('/login'); // Ruta de fallback si no se puede hacer pop
+          context.go('/login');
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceFirst("Exception: ", "")),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      // USA LAS FUNCIONES DE PROCESAMIENTO Y MUESTRA DE ERROR
+      final String friendlyErrorMessage = _processErrorMessage(e);
+      _showErrorSnackBar(friendlyErrorMessage);
     } finally {
       if (mounted) {
         setState(() {
@@ -79,6 +176,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -86,22 +184,6 @@ class _RegisterPageState extends State<RegisterPage> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      appBar: AppBar( // AppBar para el botón de retroceso automático
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              // Si no puede hacer pop (ej. es la primera pantalla), ir a login
-              // Esto es por si se accede a /register directamente.
-              context.go('/login');
-            }
-          },
-        ),
-      ),
       body: Container(
         decoration: BoxDecoration( // Mismo degradado que el login para consistencia
           gradient: LinearGradient(
@@ -261,12 +343,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       Text('¿Ya tienes una cuenta?', style: TextStyle(color: colorScheme.onSurfaceVariant)),
                       TextButton(
                         onPressed: () {
-                          // Navegar a la página de login
-                          // Si RegisterPage fue "pusheada" sobre LoginPage, un pop es suficiente.
                           if (context.canPop()) {
                             context.pop();
                           } else {
-                            // Si no, ir explícitamente (ej. si se accedió a /register directamente)
                             context.go('/login');
                           }
                         },
