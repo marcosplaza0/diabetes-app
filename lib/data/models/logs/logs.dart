@@ -1,4 +1,4 @@
-// diabetes_2/data/transfer_objects/logs.dart
+// diabetes_2/data/models/logs/logs.dart
 import 'package:hive/hive.dart';
 
 part 'logs.g.dart'; // Importante: Este archivo se generará
