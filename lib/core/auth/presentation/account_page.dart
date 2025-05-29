@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -93,6 +92,7 @@ class _AccountPageState extends State<AccountPage> {
         }
 
         if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+          if(!mounted) return;
           final imageCacheService = Provider.of<ImageCacheService>(context, listen: false);
           final newKey = imageCacheService.extractFilePathFromUrl(_avatarUrl!);
           if (profileToSync.avatarCacheKey != newKey) {
@@ -325,7 +325,7 @@ class _AccountPageState extends State<AccountPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Divider(height: 50, thickness: 1, indent: 20, endIndent: 20, color: colorScheme.outlineVariant.withOpacity(0.5)),
+        Divider(height: 50, thickness: 1, indent: 20, endIndent: 20, color: colorScheme.outlineVariant.withValues(alpha:0.5)),
         TextButton.icon(
           icon: Icon(Icons.logout, color: colorScheme.error),
           label: Text(
@@ -390,7 +390,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
             if (isAnyOperationPending) // Superposición de loader para operaciones en curso
               Container(
-                color: colorScheme.scrim.withOpacity(0.3),
+                color: colorScheme.scrim.withValues(alpha:0.3),
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],

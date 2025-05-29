@@ -415,7 +415,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         await _mealLogBox.add(mealLog);
         message = 'Nota de comida guardada en Hive';
       }
-      print('$message: $mealLog');
+      debugPrint('$message: $mealLog');
 
       if (!mounted) return; // <-- ADD THIS CHECK
 
@@ -429,7 +429,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Error al guardar/actualizar MealLog en Hive: $e');
+      debugPrint('Error al guardar/actualizar MealLog en Hive: $e');
       if (!mounted) return; // <-- ADD THIS CHECK
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),
@@ -473,7 +473,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         await _overnightLogBox.add(overnightLog);
         message = 'Nota de noche guardada en Hive';
       }
-      print('$message: $overnightLog');
+      debugPrint('$message: $overnightLog');
 
       if (!mounted) return; // <-- ADD THIS CHECK
 
@@ -487,7 +487,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Error al guardar/actualizar OvernightLog en Hive: $e');
+      debugPrint('Error al guardar/actualizar OvernightLog en Hive: $e');
       if (!mounted) return; // <-- ADD THIS CHECK
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),

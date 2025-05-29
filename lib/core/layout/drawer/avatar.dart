@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:diabetes_2/main.dart'; // para supabase client
 import 'package:provider/provider.dart'; // para Provider
 import 'package:diabetes_2/core/services/image_cache_service.dart'; // Ajusta la ruta
-import 'package:flutter/foundation.dart'; // para debugPrint
 
 class Avatar extends StatefulWidget {
   const Avatar({

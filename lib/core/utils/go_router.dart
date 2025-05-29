@@ -102,7 +102,7 @@ class GoRouterUtils {
           if(logKeyString != null) {
             logKey = int.tryParse(logKeyString);
             if(logKey == null) {
-              print("Error: logKeyString is not an integer: $logKeyString");
+              debugPrint("Error: logKeyString is not an integer: $logKeyString");
             }
           }
           return DiabetesLogScreen(

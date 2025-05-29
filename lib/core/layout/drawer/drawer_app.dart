@@ -29,6 +29,7 @@ class _DrawerAppState extends State<DrawerApp> {
   bool _initialLoadAttempted = false; // Para saber si ya intentamos la carga síncrona de Hive
 
   // Futuro para la sincronización en segundo plano
+  // ignore: unused_field
   Future<void>? _profileSyncFuture;
 
   @override
@@ -97,7 +98,7 @@ class _DrawerAppState extends State<DrawerApp> {
           // .getImage() es síncrono si la imagen está en la caché de Hive
           avatarFromHiveCache = await imageCacheService.getImage(hiveProfile.avatarCacheKey!);
         }
-        debugPrint("Drawer (InitialLoad): Datos de Hive: Nombre='${nameFromHive}', Email='${emailFromHive}', AvatarKey='${hiveProfile.avatarCacheKey}', AvatarCargado=${avatarFromHiveCache != null}");
+        debugPrint("Drawer (InitialLoad): Datos de Hive: Nombre='$nameFromHive', Email='$emailFromHive', AvatarKey='${hiveProfile.avatarCacheKey}', AvatarCargado=${avatarFromHiveCache != null}");
       } else {
         debugPrint("Drawer (InitialLoad): No hay perfil en Hive para ${currentUser.email} o no coincide.");
       }
@@ -364,8 +365,6 @@ class _DrawerAppState extends State<DrawerApp> {
                 } catch (e) {
                   debugPrint("Error signing out desde Drawer: $e");
                   if(mounted) {
-                    // Usar el context.showSnackBar de main.dart si lo tienes como extensión
-                    // o el ScaffoldMessenger local.
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Error al cerrar sesión: $e'), backgroundColor: Colors.red),
                     );

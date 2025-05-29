@@ -176,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                         activeColor: Theme.of(context).colorScheme.primary,
                       );
-                    }).toList(),
+                    }),
                     const SizedBox(height: 8),
                     if (selectedStrategy == CloudImportStrategy.overwrite)
                       Text(

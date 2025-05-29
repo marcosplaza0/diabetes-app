@@ -68,9 +68,6 @@ class _RegisterPageState extends State<RegisterPage> {
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
 
-    final theme = Theme.of(context);
-    // Usaremos colores primarios o de éxito definidos en el tema si los tienes,
-    // o un verde estándar como fallback.
     final successBackgroundColor = Colors.green.shade700; // Puedes ajustar esto
     final onSuccessColor = Colors.white; // Color para el texto y el icono sobre el fondo de éxito
 
@@ -152,11 +149,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         // USA LA NUEVA FUNCIÓN DE SNACKBAR DE ÉXITO
-        _showSuccessSnackBar(
-            '¡Registro casi completo! Se ha enviado un correo de confirmación a $email. Por favor, verifica tu email para activar tu cuenta.');
+        _showSuccessSnackBar( '¡Registro casi completo! Se ha enviado un correo de confirmación a $email. Por favor, verifica tu email para activar tu cuenta.');
 
         // Retraso opcional antes de navegar para dar tiempo a leer el SnackBar
         await Future.delayed(const Duration(seconds: 1));
+
+        if(!mounted) return;
 
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
@@ -190,10 +188,10 @@ class _RegisterPageState extends State<RegisterPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              colorScheme.primary.withOpacity(0.05),
+              colorScheme.primary.withValues(alpha:0.05),
               colorScheme.surface,
               colorScheme.surface,
-              colorScheme.secondary.withOpacity(0.05),
+              colorScheme.secondary.withValues(alpha:0.05),
             ],
             stops: const [0.0, 0.3, 0.7, 1.0],
           ),

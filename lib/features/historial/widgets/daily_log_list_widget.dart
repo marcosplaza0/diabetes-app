@@ -124,7 +124,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.7),
+                    backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha:0.7),
                     radius: 18,
                     child: Icon(Icons.restaurant_menu, color: theme.colorScheme.onPrimaryContainer, size: 20),
                   ),

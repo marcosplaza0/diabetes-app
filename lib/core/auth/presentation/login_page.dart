@@ -131,10 +131,10 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              colorScheme.primary.withOpacity(0.1),
+              colorScheme.primary.withValues(alpha:0.1),
               colorScheme.surface,
               colorScheme.surface,
-              colorScheme.secondary.withOpacity(0.1),
+              colorScheme.secondary.withValues(alpha:0.1),
             ],
             stops: const [0.0, 0.4, 0.6, 1.0],
           ),
