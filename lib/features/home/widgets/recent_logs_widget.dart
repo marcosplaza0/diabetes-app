@@ -1,4 +1,4 @@
-// lib/widgets/recent_logs_widget.dart
+// lib/features/home/widgets/recent_logs_widget.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +21,7 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   void initState() {
     super.initState();
     _loadRecentLogs();
+    // Escuchar cambios en las cajas de Hive para actualizar la UI
     Hive.box<MealLog>(mealLogBoxName).listenable().addListener(_loadRecentLogs);
     Hive.box<OvernightLog>(overnightLogBoxName).listenable().addListener(_loadRecentLogs);
   }
@@ -40,14 +41,16 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
     final mealLogBox = Hive.box<MealLog>(mealLogBoxName);
     for (var log in mealLogBox.values) {
       if (log.startTime.isAfter(twentyFourHoursAgo)) {
-        combinedLogs.add({'time': log.startTime, 'log': log, 'type': 'meal', 'key': log.key}); // Added key
+        // log.key ahora será el String UUID si se guardó con .put(uuid, log)
+        combinedLogs.add({'time': log.startTime, 'log': log, 'type': 'meal', 'key': log.key});
       }
     }
 
     final overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName);
     for (var log in overnightLogBox.values) {
       if (log.bedTime.isAfter(twentyFourHoursAgo)) {
-        combinedLogs.add({'time': log.bedTime, 'log': log, 'type': 'overnight', 'key': log.key}); // Added key
+        // log.key ahora será el String UUID
+        combinedLogs.add({'time': log.bedTime, 'log': log, 'type': 'overnight', 'key': log.key});
       }
     }
 
@@ -63,8 +66,8 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   void _showLogDetails(BuildContext passedContext, dynamic logData) {
     final log = logData['log'];
     final String type = logData['type'];
-    final dynamic logKey = logData['key']; // Get the key
-    final DateFormat timeFormat = DateFormat.Hm();
+    final dynamic logKeyFromMap = logData['key']; // Esta es la clave de Hive (UUID String)
+    final DateFormat timeFormat = DateFormat.Hm(); // Usar localización si es necesario
     final theme = Theme.of(passedContext);
 
     showModalBottomSheet(
@@ -106,18 +109,18 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
                   icon: Icon(Icons.edit_rounded, color: bottomSheetTheme.colorScheme.primary),
                   tooltip: 'Editar registro',
                   onPressed: () {
-                    Navigator.pop(bContext); // Close the bottom sheet first
+                    Navigator.pop(bContext); // Cerrar el bottom sheet primero
 
-                    if (logKey != null) {
-                      final String logKeyString = logKey.toString();
-                      final String logTypeString = type; // 'meal' or 'overnight'
+                    if (logKeyFromMap != null) {
+                      // logKeyFromMap ya es el String UUID
+                      final String logKeyString = logKeyFromMap.toString();
+                      final String logTypeString = type;
 
-                      // Navigate to the edit screen using go_router
                       GoRouter.of(passedContext).pushNamed(
-                        'diabetesLogEdit', // Defined in go_router.dart
+                        'diabetesLogEdit',
                         pathParameters: {
                           'logTypeString': logTypeString,
-                          'logKeyString': logKeyString,
+                          'logKeyString': logKeyString, // Se pasa el UUID String
                         },
                       );
                     } else {
@@ -156,31 +159,35 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
     }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Espacio a los lados del Row
       child: Row(
         children: _sortedRecentLogs.map((logData) {
           final String type = logData['type'];
           final DateTime time = logData['time'];
           IconData iconData = type == 'meal' ? Icons.fastfood_rounded : Icons.bedtime_rounded;
-          Color iconColor = type == 'meal' ? theme.colorScheme.primary : theme.colorScheme.secondary;
+          // Usar un color de contenedor del tema para el fondo del icono
           Color iconBackgroundColor = type == 'meal' ? theme.colorScheme.primaryContainer : theme.colorScheme.secondaryContainer;
+          Color onIconBackgroundColor = type == 'meal' ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSecondaryContainer;
+
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0), // Espacio entre iconos
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: iconBackgroundColor.withAlpha(77), //  (alpha:0.3 * 255 ~= 77)
+                    color: iconBackgroundColor.withAlpha(90), // Un poco de transparencia
                     shape: BoxShape.circle,
                   ),
-                  child: IconButton(
-                    icon: Icon(iconData, size: 14),
-                    color: iconColor,
+                  child: IconButton( // Usar IconButton para mejor accesibilidad y feedback táctil
+                    icon: Icon(iconData, size: 22), // Tamaño de icono ajustado
+                    color: onIconBackgroundColor, // Color del icono
                     tooltip: '${type == 'meal' ? 'Comida' : 'Noche'} - ${DateFormat.Hm().format(time)}',
                     onPressed: () => _showLogDetails(context, logData),
+                    iconSize: 20, // Tamaño del área de toque
+                    padding: const EdgeInsets.all(10), // Padding dentro del IconButton
+                    constraints: const BoxConstraints(), // Para eliminar constraints adicionales si es necesario
                   ),
                 ),
                 const SizedBox(height: 4),

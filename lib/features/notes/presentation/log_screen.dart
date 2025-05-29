@@ -1,14 +1,20 @@
-// diabetes_log_screen.dart
-
+// lib/features/notes/presentation/log_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
-// ... (constantes y nombres de cajas como antes) ...
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
+import 'package:diabetes_2/main.dart' show supabase;
+
+import 'package:uuid/uuid.dart'; // <--- IMPORTACIÓN UUID
+
+// Nombres de las cajas de Hive y clave de SharedPreferences
 const String mealLogBoxNameFromScreen = 'meal_logs';
 const String overnightLogBoxNameFromScreen = 'overnight_logs';
+const String cloudSavePreferenceKeyFromLogScreen = 'saveToCloudEnabled';
 
 enum LogType { meal, overnight }
 
@@ -20,11 +26,10 @@ const double kBorderRadius = 8.0;
 const double kToggleMinHeight = 40.0;
 const double kButtonVerticalPadding = 12.0;
 const double kButtonFontSize = 16.0;
-// ... (resto de tus constantes k...)
 
 class DiabetesLogScreen extends StatefulWidget {
-  final dynamic logKey; // Clave de Hive (puede ser int o String si usas claves personalizadas)
-  final String? logTypeString; // 'meal' o 'overnight', vendrá de GoRouter
+  final String? logKey; // MODIFICADO: Ahora es String? para UUIDs
+  final String? logTypeString;
 
   const DiabetesLogScreen({
     super.key,
@@ -37,15 +42,13 @@ class DiabetesLogScreen extends StatefulWidget {
 }
 
 class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
-  LogType _currentLogType = LogType.meal; // Tipo de log actual, inicializado o cargado
-  bool _isEditMode = false; // Indica si estamos en modo edición
+  LogType _currentLogType = LogType.meal;
+  bool _isEditMode = false;
 
-  // Estado para fecha y hora seleccionadas
   DateTime _selectedLogDate = DateTime.now();
   TimeOfDay _selectedMealStartTime = TimeOfDay.now();
   TimeOfDay _selectedBedTime = TimeOfDay.now();
 
-  // ... (Controladores de TextEditingController como antes) ...
   final _mealFormKey = GlobalKey<FormState>();
   final _initialBloodSugarController = TextEditingController();
   final _carbohydratesController = TextEditingController();
@@ -57,9 +60,11 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
   final _slowInsulinController = TextEditingController();
   final _afterWakeUpBloodSugarController = TextEditingController();
 
-
   late Box<MealLog> _mealLogBox;
   late Box<OvernightLog> _overnightLogBox;
+
+  final SupabaseLogSyncService _logSyncService = SupabaseLogSyncService();
+  final Uuid _uuid = const Uuid(); // Instancia de Uuid
 
   @override
   void initState() {
@@ -72,62 +77,13 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       _currentLogType = widget.logTypeString == 'meal' ? LogType.meal : LogType.overnight;
       _loadLogForEditing();
     } else {
-      // Modo creación: inicializar con valores por defecto
       final now = DateTime.now();
       _selectedLogDate = DateTime(now.year, now.month, now.day);
       _selectedMealStartTime = TimeOfDay.fromDateTime(now);
-      _currentLogType = LogType.meal; // O el último tipo seleccionado si lo guardas
+      _currentLogType = LogType.meal;
     }
   }
 
-  void _loadLogForEditing() {
-    if (!_isEditMode) return;
-
-    dynamic logToEdit;
-    if (_currentLogType == LogType.meal) {
-      logToEdit = _mealLogBox.get(widget.logKey);
-    } else {
-      logToEdit = _overnightLogBox.get(widget.logKey);
-    }
-
-    if (logToEdit == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Error: Nota no encontrada."), backgroundColor: Colors.red)
-        );
-        if (Navigator.canPop(context)) Navigator.pop(context);
-      });
-      return;
-    }
-
-    if (logToEdit is MealLog) {
-      final mealLog = logToEdit;
-      setState(() {
-        _selectedLogDate = DateTime(mealLog.startTime.year, mealLog.startTime.month, mealLog.startTime.day);
-        _selectedMealStartTime = TimeOfDay.fromDateTime(mealLog.startTime);
-        _initialBloodSugarController.text = mealLog.initialBloodSugar.toStringAsFixed(0);
-        _carbohydratesController.text = mealLog.carbohydrates.toStringAsFixed(0);
-        _fastInsulinController.text = mealLog.insulinUnits.toStringAsFixed(1);
-        if (mealLog.finalBloodSugar != null) {
-          _finalBloodSugarController.text = mealLog.finalBloodSugar!.toStringAsFixed(0);
-        }
-      });
-    } else if (logToEdit is OvernightLog) {
-      final overnightLog = logToEdit;
-      setState(() {
-        _selectedLogDate = DateTime(overnightLog.bedTime.year, overnightLog.bedTime.month, overnightLog.bedTime.day);
-        _selectedBedTime = TimeOfDay.fromDateTime(overnightLog.bedTime);
-        _beforeSleepBloodSugarController.text = overnightLog.beforeSleepBloodSugar.toStringAsFixed(0);
-        _slowInsulinController.text = overnightLog.slowInsulinUnits.toStringAsFixed(1);
-        if (overnightLog.afterWakeUpBloodSugar != null) {
-          _afterWakeUpBloodSugarController.text = overnightLog.afterWakeUpBloodSugar!.toStringAsFixed(0);
-        }
-      });
-    }
-  }
-
-
-  // ... (dispose, _selectDate, _selectTime, _buildDateTimePickerTile como antes) ...
   @override
   void dispose() {
     _initialBloodSugarController.dispose();
@@ -140,12 +96,56 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     super.dispose();
   }
 
+  void _loadLogForEditing() {
+    if (!_isEditMode || widget.logKey == null) return;
+
+    dynamic logToEdit;
+    if (_currentLogType == LogType.meal) {
+      logToEdit = _mealLogBox.get(widget.logKey!); // widget.logKey es String (UUID)
+    } else {
+      logToEdit = _overnightLogBox.get(widget.logKey!); // widget.logKey es String (UUID)
+    }
+
+    if (logToEdit == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Error: Nota no encontrada."), backgroundColor: Colors.red)
+          );
+          if (Navigator.canPop(context)) Navigator.pop(context);
+        }
+      });
+      return;
+    }
+
+    if (logToEdit is MealLog) {
+      final mealLog = logToEdit;
+      setState(() {
+        _selectedLogDate = DateTime(mealLog.startTime.year, mealLog.startTime.month, mealLog.startTime.day);
+        _selectedMealStartTime = TimeOfDay.fromDateTime(mealLog.startTime);
+        _initialBloodSugarController.text = mealLog.initialBloodSugar.toStringAsFixed(0);
+        _carbohydratesController.text = mealLog.carbohydrates.toStringAsFixed(0);
+        _fastInsulinController.text = mealLog.insulinUnits.toStringAsFixed(1);
+        _finalBloodSugarController.text = mealLog.finalBloodSugar?.toStringAsFixed(0) ?? '';
+      });
+    } else if (logToEdit is OvernightLog) {
+      final overnightLog = logToEdit;
+      setState(() {
+        _selectedLogDate = DateTime(overnightLog.bedTime.year, overnightLog.bedTime.month, overnightLog.bedTime.day);
+        _selectedBedTime = TimeOfDay.fromDateTime(overnightLog.bedTime);
+        _beforeSleepBloodSugarController.text = overnightLog.beforeSleepBloodSugar.toStringAsFixed(0);
+        _slowInsulinController.text = overnightLog.slowInsulinUnits.toStringAsFixed(1);
+        _afterWakeUpBloodSugarController.text = overnightLog.afterWakeUpBloodSugar?.toStringAsFixed(0) ?? '';
+      });
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedLogDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101), // Permitir fechas futuras si es necesario para editar
+      lastDate: DateTime(2101),
     );
     if (picked != null && picked != _selectedLogDate) {
       setState(() {
@@ -180,18 +180,17 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
   }
 
   Widget _buildLogTypeSelector() {
-    // En modo edición, no permitimos cambiar el tipo de log.
     if (_isEditMode) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: kDefaultPadding),
         child: Text(
           _currentLogType == LogType.meal ? "Editando Nota de Comida" : "Editando Nota de Noche",
-          style: Theme.of(context).textTheme.titleLarge,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
       );
     }
-    // ... (el ToggleButtons como antes)
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: kDefaultPadding),
       child: ToggleButtons(
@@ -204,10 +203,9 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
             _currentLogType = index == 0 ? LogType.meal : LogType.overnight;
           });
         },
-        // ... (resto de propiedades de ToggleButtons)
         borderRadius: BorderRadius.circular(kBorderRadius),
         selectedBorderColor: Theme.of(context).colorScheme.primary,
-        selectedColor: Colors.white,
+        selectedColor: Theme.of(context).colorScheme.onPrimary,
         fillColor: Theme.of(context).colorScheme.primary,
         color: Theme.of(context).colorScheme.primary,
         constraints: BoxConstraints(
@@ -227,111 +225,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     );
   }
 
-  // --- _buildMealForm y _buildOvernightForm (sin cambios en su estructura interna, solo en cómo se muestran) ---
-  // ... (estos métodos permanecen como antes, definiendo los campos del formulario) ...
-  Widget _buildMealForm() {
-    // Contenido idéntico al de la versión anterior
-    return Form(
-      key: _mealFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildDateTimePickerTile(
-            label: "Hora de Inicio Comida",
-            value: _selectedMealStartTime.format(context),
-            icon: Icons.access_time,
-            onTap: () => _selectTime(context, _selectedMealStartTime, (newTime) {
-              setState(() => _selectedMealStartTime = newTime);
-            }),
-          ),
-          const SizedBox(height: kVerticalSpacerSmall),
-          Text("Inicio de Comida", style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: kVerticalSpacerSmall),
-          _buildNumericTextField(
-            controller: _initialBloodSugarController,
-            labelText: 'Glucemia Inicial (mg/dL)',
-            icon: Icons.bloodtype,
-          ),
-          _buildNumericTextField(
-            controller: _carbohydratesController,
-            labelText: 'Hidratos de Carbono (g)',
-            icon: Icons.local_dining,
-          ),
-          _buildNumericTextField(
-            controller: _fastInsulinController,
-            labelText: 'Unidades de Insulina Rápida (U)',
-            icon: Icons.opacity,
-          ),
-          const SizedBox(height: kVerticalSpacerLarge),
-          Text("Final de Comida (después de 3 horas)", style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: kVerticalSpacerSmall),
-          _buildNumericTextField(
-            controller: _finalBloodSugarController,
-            labelText: 'Glucemia Final (mg/dL)',
-            icon: Icons.bloodtype_outlined,
-            isOptional: true,
-          ),
-          const SizedBox(height: kVerticalSpacerLarge),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.save),
-            label: Text(_isEditMode ? 'Actualizar Nota de Comida' : 'Guardar Nota de Comida'),
-            onPressed: _saveMealLog,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: kButtonVerticalPadding),
-              textStyle: const TextStyle(fontSize: kButtonFontSize),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOvernightForm() {
-    // Contenido idéntico al de la versión anterior
-    return Form(
-      key: _overnightFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildDateTimePickerTile(
-            label: "Hora de Acostarse",
-            value: _selectedBedTime.format(context),
-            icon: Icons.bedtime_outlined,
-            onTap: () => _selectTime(context, _selectedBedTime, (newTime) {
-              setState(() => _selectedBedTime = newTime);
-            }),
-          ),
-          const SizedBox(height: kVerticalSpacerSmall),
-          _buildNumericTextField(
-            controller: _beforeSleepBloodSugarController,
-            labelText: 'Glucemia antes de dormir (mg/dL)',
-            icon: Icons.nightlight_round,
-          ),
-          _buildNumericTextField(
-            controller: _slowInsulinController,
-            labelText: 'Unidades de Insulina Lenta (U)',
-            icon: Icons.opacity,
-          ),
-          _buildNumericTextField(
-            controller: _afterWakeUpBloodSugarController,
-            labelText: 'Glucemia al levantarse (mg/dL)',
-            icon: Icons.wb_sunny,
-            isOptional: true,
-          ),
-          const SizedBox(height: kVerticalSpacerLarge),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.save),
-            label: Text(_isEditMode ? 'Actualizar Nota de Noche' : 'Guardar Nota de Noche'),
-            onPressed: _saveOvernightLog,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: kButtonVerticalPadding),
-              textStyle: const TextStyle(fontSize: kButtonFontSize),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
   Widget _buildNumericTextField({
     required TextEditingController controller,
     required String labelText,
@@ -344,8 +237,13 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         controller: controller,
         decoration: InputDecoration(
           labelText: labelText,
-          prefixIcon: Icon(icon),
+          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(kBorderRadius),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0)
+          ),
+          floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: <TextInputFormatter>[
@@ -370,15 +268,152 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     );
   }
 
+  Widget _buildMealForm() {
+    return Form(
+      key: _mealFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _buildDateTimePickerTile(
+            label: "Hora de Inicio Comida",
+            value: _selectedMealStartTime.format(context),
+            icon: Icons.access_time_filled_outlined,
+            onTap: () => _selectTime(context, _selectedMealStartTime, (newTime) {
+              setState(() => _selectedMealStartTime = newTime);
+            }),
+          ),
+          const SizedBox(height: kVerticalSpacerSmall),
+          Text("Detalles de la Comida", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          const SizedBox(height: kVerticalSpacerSmall),
+          _buildNumericTextField(
+            controller: _initialBloodSugarController,
+            labelText: 'Glucemia Inicial (mg/dL)',
+            icon: Icons.bloodtype_outlined,
+          ),
+          _buildNumericTextField(
+            controller: _carbohydratesController,
+            labelText: 'Hidratos de Carbono (g)',
+            icon: Icons.egg_outlined,
+          ),
+          _buildNumericTextField(
+            controller: _fastInsulinController,
+            labelText: 'Insulina Rápida (U)',
+            icon: Icons.colorize_outlined,
+          ),
+          const SizedBox(height: kVerticalSpacerMedium),
+          Text("Post-Comida ~3 horas después", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          const SizedBox(height: kVerticalSpacerSmall),
+          _buildNumericTextField(
+            controller: _finalBloodSugarController,
+            labelText: 'Glucemia Final (mg/dL)',
+            icon: Icons.bloodtype_outlined,
+            isOptional: true,
+          ),
+          const SizedBox(height: kVerticalSpacerLarge),
+          ElevatedButton.icon(
+            icon: Icon(_isEditMode ? Icons.sync_alt_outlined : Icons.save_alt_outlined),
+            label: Text(_isEditMode ? 'Actualizar Nota de Comida' : 'Guardar Nota de Comida'),
+            onPressed: _saveMealLog,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: kButtonVerticalPadding),
+              textStyle: const TextStyle(fontSize: kButtonFontSize, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOvernightForm() {
+    return Form(
+      key: _overnightFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _buildDateTimePickerTile(
+            label: "Hora de Acostarse",
+            value: _selectedBedTime.format(context),
+            icon: Icons.bedtime_outlined,
+            onTap: () => _selectTime(context, _selectedBedTime, (newTime) {
+              setState(() => _selectedBedTime = newTime);
+            }),
+          ),
+          const SizedBox(height: kVerticalSpacerSmall),
+          Text("Detalles Nocturnos", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          const SizedBox(height: kVerticalSpacerSmall),
+          _buildNumericTextField(
+            controller: _beforeSleepBloodSugarController,
+            labelText: 'Glucemia antes de dormir (mg/dL)',
+            icon: Icons.nightlight_round_outlined,
+          ),
+          _buildNumericTextField(
+            controller: _slowInsulinController,
+            labelText: 'Insulina Lenta (U)',
+            icon: Icons.colorize_outlined,
+          ),
+          const SizedBox(height: kVerticalSpacerMedium),
+          Text("Al Despertar (opcional)", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          const SizedBox(height: kVerticalSpacerSmall),
+          _buildNumericTextField(
+            controller: _afterWakeUpBloodSugarController,
+            labelText: 'Glucemia al levantarse (mg/dL)',
+            icon: Icons.wb_sunny_outlined,
+            isOptional: true,
+          ),
+          const SizedBox(height: kVerticalSpacerLarge),
+          ElevatedButton.icon(
+            icon: Icon(_isEditMode ? Icons.sync_alt_outlined : Icons.save_alt_outlined),
+            label: Text(_isEditMode ? 'Actualizar Nota de Noche' : 'Guardar Nota de Noche'),
+            onPressed: _saveOvernightLog,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: kButtonVerticalPadding),
+              textStyle: const TextStyle(fontSize: kButtonFontSize, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _clearMealForm() {
+    _mealFormKey.currentState?.reset();
+    _initialBloodSugarController.clear();
+    _carbohydratesController.clear();
+    _fastInsulinController.clear();
+    _finalBloodSugarController.clear();
+    if (!_isEditMode) {
+      setState(() {
+        _selectedMealStartTime = TimeOfDay.fromDateTime(DateTime.now());
+      });
+    }
+  }
+
+  void _clearOvernightForm() {
+    _overnightFormKey.currentState?.reset();
+    _beforeSleepBloodSugarController.clear();
+    _slowInsulinController.clear();
+    _afterWakeUpBloodSugarController.clear();
+    if (!_isEditMode) {
+      setState(() {
+        _selectedBedTime = TimeOfDay.now();
+      });
+    }
+  }
 
   void _saveMealLog() async {
-    if (!(_mealFormKey.currentState?.validate() ?? false)) { /* ... */ return; }
+    if (!(_mealFormKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, corrige los errores en el formulario.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
     final DateTime mealEventStartTime = DateTime(
       _selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day,
       _selectedMealStartTime.hour, _selectedMealStartTime.minute,
     );
-    // ... (parseo de controladores como antes) ...
     final double? initialBloodSugar = double.tryParse(_initialBloodSugarController.text);
     final double? carbohydrates = double.tryParse(_carbohydratesController.text);
     final double? fastInsulin = double.tryParse(_fastInsulinController.text);
@@ -408,48 +443,63 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
     try {
       String message;
+      String currentHiveKey; // Ahora siempre será String (UUID)
+
       if (_isEditMode) {
-        await _mealLogBox.put(widget.logKey, mealLog);
+        currentHiveKey = widget.logKey!; // Ya es un String (UUID) del parámetro del widget
+        await _mealLogBox.put(currentHiveKey, mealLog);
         message = 'Nota de comida actualizada en Hive';
       } else {
-        await _mealLogBox.add(mealLog);
+        currentHiveKey = _uuid.v4(); // Generar nuevo UUID para la nueva nota
+        await _mealLogBox.put(currentHiveKey, mealLog); // Usar .put con el UUID
         message = 'Nota de comida guardada en Hive';
       }
-      debugPrint('$message: $mealLog');
+      debugPrint('$message: $mealLog con clave de Hive (UUID): $currentHiveKey');
 
-      if (!mounted) return; // <-- ADD THIS CHECK
+      final prefs = await SharedPreferences.getInstance();
+      final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
+      final bool isLoggedIn = supabase.auth.currentUser != null;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
-      _clearMealForm(); // This is fine as it doesn't use context
-
-      if (Navigator.canPop(context)) {
-        if (!mounted) return; // <-- ADD THIS CHECK (before Navigator)
-        Navigator.pop(context);
+      if (cloudSaveEnabled && isLoggedIn) {
+        await _logSyncService.syncMealLog(mealLog, currentHiveKey);
+        message += ' y sincronizada con la nube.';
+        debugPrint("MealLog sincronizado a Supabase con clave de Hive (UUID) $currentHiveKey.");
+      } else if (cloudSaveEnabled && !isLoggedIn) {
+        message += ', pero no se pudo sincronizar (no has iniciado sesión).';
+        debugPrint("MealLog NO sincronizado: Usuario no logueado.");
       }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
+      _clearMealForm();
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
     } catch (e) {
-      debugPrint('Error al guardar/actualizar MealLog en Hive: $e');
-      if (!mounted) return; // <-- ADD THIS CHECK
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),
-      );
+      debugPrint('Error al guardar/actualizar MealLog: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar/actualizar: ${e.toString()}'), backgroundColor: Colors.red));
     }
   }
 
   void _saveOvernightLog() async {
-    if (!(_overnightFormKey.currentState?.validate() ?? false)) { /* ... */ return; }
+    if (!(_overnightFormKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, corrige los errores en el formulario.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
     final DateTime bedEventTime = DateTime(
       _selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day,
       _selectedBedTime.hour, _selectedBedTime.minute,
     );
-    // ... (parseo de controladores como antes) ...
     final double? beforeSleepBloodSugar = double.tryParse(_beforeSleepBloodSugarController.text);
     final double? slowInsulinUnits = double.tryParse(_slowInsulinController.text);
 
     if (beforeSleepBloodSugar == null || slowInsulinUnits == null) {
-      // ... (snackbar de error)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error en los datos numéricos obligatorios.'), backgroundColor: Colors.red),
+      );
       return;
     }
     final double? afterWakeUpBloodSugar = _afterWakeUpBloodSugarController.text.isNotEmpty
@@ -463,91 +513,87 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       afterWakeUpBloodSugar: afterWakeUpBloodSugar,
     );
 
-
     try {
       String message;
+      String currentHiveKey; // Ahora siempre será String (UUID)
+
       if (_isEditMode) {
-        await _overnightLogBox.put(widget.logKey, overnightLog);
+        currentHiveKey = widget.logKey!; // Ya es un String (UUID)
+        await _overnightLogBox.put(currentHiveKey, overnightLog);
         message = 'Nota de noche actualizada en Hive';
       } else {
-        await _overnightLogBox.add(overnightLog);
+        currentHiveKey = _uuid.v4(); // Generar nuevo UUID
+        await _overnightLogBox.put(currentHiveKey, overnightLog); // Usar .put con UUID
         message = 'Nota de noche guardada en Hive';
       }
-      debugPrint('$message: $overnightLog');
+      debugPrint('$message: $overnightLog con clave de Hive (UUID): $currentHiveKey');
 
-      if (!mounted) return; // <-- ADD THIS CHECK
+      final prefs = await SharedPreferences.getInstance();
+      final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
+      final bool isLoggedIn = supabase.auth.currentUser != null;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
-      _clearOvernightForm(); // This is fine
-
-      if (Navigator.canPop(context)) {
-        if (!mounted) return; // <-- ADD THIS CHECK (before Navigator)
-        Navigator.pop(context);
+      if (cloudSaveEnabled && isLoggedIn) {
+        await _logSyncService.syncOvernightLog(overnightLog, currentHiveKey);
+        message += ' y sincronizada con la nube.';
+        debugPrint("OvernightLog sincronizado a Supabase con clave de Hive (UUID) $currentHiveKey.");
+      } else if (cloudSaveEnabled && !isLoggedIn) {
+        message += ', pero no se pudo sincronizar (no has iniciado sesión).';
+        debugPrint("OvernightLog NO sincronizado: Usuario no logueado.");
       }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
+      _clearOvernightForm();
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
     } catch (e) {
-      debugPrint('Error al guardar/actualizar OvernightLog en Hive: $e');
-      if (!mounted) return; // <-- ADD THIS CHECK
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar/actualizar: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  void _clearMealForm() {
-    // ... (código de clear como antes)
-    _mealFormKey.currentState?.reset();
-    _initialBloodSugarController.clear();
-    _carbohydratesController.clear();
-    _fastInsulinController.clear();
-    _finalBloodSugarController.clear();
-    if (!_isEditMode) { // Solo resetea la hora si no está en modo edición
-      setState(() {
-        _selectedMealStartTime = TimeOfDay.fromDateTime(DateTime.now());
-      });
-    }
-  }
-
-  void _clearOvernightForm() {
-    // ... (código de clear como antes)
-    _overnightFormKey.currentState?.reset();
-    _beforeSleepBloodSugarController.clear();
-    _slowInsulinController.clear();
-    _afterWakeUpBloodSugarController.clear();
-    if (!_isEditMode) { // Solo resetea la hora si no está en modo edición
-      setState(() {
-        _selectedBedTime = TimeOfDay.now();
-      });
+      debugPrint('Error al guardar/actualizar OvernightLog: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar/actualizar: ${e.toString()}'), backgroundColor: Colors.red));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final DateFormat dateFormat = DateFormat.yMMMMd(Localizations.localeOf(context).languageCode);
+    final String appBarTitle = _isEditMode ? 'Editar Registro' : 'Nuevo Registro de Diabetes';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Editar Registro' : 'Nuevo Registro'),
+        title: Text(appBarTitle),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(kDefaultPadding),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _buildDateTimePickerTile(
-              label: "Fecha del Registro",
-              value: dateFormat.format(_selectedLogDate),
-              icon: Icons.calendar_today,
-              onTap: () => _selectDate(context),
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+              child: _buildDateTimePickerTile(
+                label: "Fecha del Registro",
+                value: dateFormat.format(_selectedLogDate),
+                icon: Icons.calendar_today_outlined,
+                onTap: () => _selectDate(context),
+              ),
             ),
-            const Divider(),
-            _buildLogTypeSelector(), // Se deshabilita en modo edición
+            const Divider(height: kVerticalSpacerLarge),
+
+            _buildLogTypeSelector(),
             const SizedBox(height: kVerticalSpacerMedium),
-            // Mostrar el formulario correspondiente al tipo de log actual
-            if (_currentLogType == LogType.meal)
-              _buildMealForm()
-            else
-              _buildOvernightForm(),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+              child: Padding(
+                padding: const EdgeInsets.all(kDefaultPadding),
+                child: _currentLogType == LogType.meal
+                    ? _buildMealForm()
+                    : _buildOvernightForm(),
+              ),
+            ),
+            const SizedBox(height: kVerticalSpacerLarge),
           ],
         ),
       ),

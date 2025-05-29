@@ -1,14 +1,27 @@
+// lib/core/auth/presentation/account_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // NUEVO
 
-import 'package:diabetes_2/main.dart' show supabase, userProfileBoxName; // Asegúrate que userProfileBoxName esté exportado
+import 'package:diabetes_2/main.dart' show supabase, userProfileBoxName, mealLogBoxName, overnightLogBoxName; // NUEVO: mealLogBoxName, overnightLogBoxName
 import 'package:diabetes_2/core/layout/drawer/avatar.dart';
 import 'package:diabetes_2/data/models/profile/user_profile_data.dart';
 import 'package:diabetes_2/core/services/image_cache_service.dart';
+import 'package:diabetes_2/data/models/logs/logs.dart'; // NUEVO
+import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // NUEVO
 
+// Clave para SharedPreferences (debería ser global o importada)
+const String cloudSavePreferenceKeyFromAccountPage = 'saveToCloudEnabled';
+
+// Enum para las acciones del diálogo de logout (puede estar en un archivo común)
+enum AccountPageLogoutPromptAction {
+  uploadAndLogout,
+  logoutWithoutUploading,
+  cancel,
+}
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -23,13 +36,16 @@ class _AccountPageState extends State<AccountPage> {
   final List<String> _genderOptions = ['Masculino', 'Femenino', 'Otro', 'Prefiero no decirlo'];
 
   String? _avatarUrl;
-  bool _isLoadingPage = true; // Para la carga inicial de la página
-  bool _isSavingProfile = false;
-  bool _isUploadingAvatar = false;
-  bool _isSigningOut = false;
+
+  // NUEVO: Estado unificado para operaciones de red/disco
+  bool _isProcessing = false;
 
   late Box<UserProfileData> _userProfileBox;
   final String _userProfileHiveKey = 'currentUserProfile';
+
+  // NUEVO: Para la lógica de logout
+  final SupabaseLogSyncService _logSyncServiceAccount = SupabaseLogSyncService();
+
 
   @override
   void initState() {
@@ -44,7 +60,7 @@ class _AccountPageState extends State<AccountPage> {
     super.dispose();
   }
 
-  void _showCustomSnackBar(String message, {bool isError = false}) {
+  void _showCustomSnackBar(String message, {bool isError = false}) { /* ... (sin cambios) ... */
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -59,8 +75,8 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Future<void> _getProfile() async {
-    setState(() { _isLoadingPage = true; });
+  Future<void> _getProfile() async { /* ... (sin cambios en lógica, usar _isProcessing para _isLoadingPage) ... */
+    if (mounted) setState(() { _isProcessing = true; }); // Usar _isProcessing
     try {
       final userId = supabase.auth.currentSession!.user.id;
       final data = await supabase.from('profiles').select().eq('id', userId).single();
@@ -76,7 +92,6 @@ class _AccountPageState extends State<AccountPage> {
       }
       _avatarUrl = (data['avatar_url'] ?? '') as String;
 
-      // Sincronizar/crear perfil en Hive con datos de Supabase (si es necesario)
       final currentUserEmail = supabase.auth.currentUser?.email;
       if (currentUserEmail != null) {
         UserProfileData profileToSync = _userProfileBox.get(_userProfileHiveKey) ?? UserProfileData();
@@ -86,7 +101,7 @@ class _AccountPageState extends State<AccountPage> {
           profileToSync.username = _usernameController.text;
           needsUpdate = true;
         }
-        if (profileToSync.email != currentUserEmail) { // Debería ser raro que cambie, pero por consistencia
+        if (profileToSync.email != currentUserEmail) {
           profileToSync.email = currentUserEmail;
           needsUpdate = true;
         }
@@ -99,17 +114,16 @@ class _AccountPageState extends State<AccountPage> {
             profileToSync.avatarCacheKey = newKey;
             needsUpdate = true;
           }
-        } else if (profileToSync.avatarCacheKey != null) { // Si Supabase no tiene avatar pero Hive sí
+        } else if (profileToSync.avatarCacheKey != null) {
           profileToSync.avatarCacheKey = null;
           needsUpdate = true;
         }
 
         if (needsUpdate || !_userProfileBox.containsKey(_userProfileHiveKey) || profileToSync.email != currentUserEmail) {
-          // Asegurarse de que solo se guarde para el usuario correcto.
           if (profileToSync.email == null || profileToSync.email == currentUserEmail) {
-            profileToSync.email = currentUserEmail; // Confirmar email
+            profileToSync.email = currentUserEmail;
             await _userProfileBox.put(_userProfileHiveKey, profileToSync);
-            debugPrint("AccountPage _getProfile: Perfil de Hive sincronizado/creado. Email: $currentUserEmail");
+            // debugPrint("AccountPage _getProfile: Perfil de Hive sincronizado/creado. Email: $currentUserEmail");
           }
         }
       }
@@ -119,18 +133,18 @@ class _AccountPageState extends State<AccountPage> {
     } catch (error) {
       if (mounted) _showCustomSnackBar('Error inesperado al obtener el perfil.', isError: true);
     } finally {
-      if (mounted) setState(() { _isLoadingPage = false; });
+      if (mounted) setState(() { _isProcessing = false; }); // Usar _isProcessing
     }
   }
 
-  Future<void> _updateProfile() async {
-    setState(() { _isSavingProfile = true; });
+  Future<void> _updateProfile() async { /* ... (sin cambios en lógica, usar _isProcessing para _isSavingProfile) ... */
+    if(mounted) setState(() { _isProcessing = true; });
     final userName = _usernameController.text.trim();
     final user = supabase.auth.currentUser;
 
     if (user == null) {
       if (mounted) _showCustomSnackBar('No hay sesión activa.', isError: true);
-      setState(() { _isSavingProfile = false; });
+      if(mounted) setState(() { _isProcessing = false; });
       return;
     }
 
@@ -146,27 +160,27 @@ class _AccountPageState extends State<AccountPage> {
 
       UserProfileData profileToUpdate = _userProfileBox.get(_userProfileHiveKey) ?? UserProfileData();
       profileToUpdate.username = userName;
-      profileToUpdate.email = user.email; // Email de la sesión actual
+      profileToUpdate.email = user.email;
       await _userProfileBox.put(_userProfileHiveKey, profileToUpdate);
-      debugPrint("AccountPage _updateProfile: Username en Hive actualizado a: $userName para ${user.email}");
+      // debugPrint("AccountPage _updateProfile: Username en Hive actualizado a: $userName para ${user.email}");
 
     } on PostgrestException catch (error) {
       if (mounted) _showCustomSnackBar(error.message, isError: true);
     } catch (error) {
       if (mounted) _showCustomSnackBar('Error inesperado al actualizar el perfil.', isError: true);
     } finally {
-      if (mounted) setState(() { _isSavingProfile = false; });
+      if (mounted) setState(() { _isProcessing = false; });
     }
   }
 
-  Future<void> _onUpload(String imageUrl) async {
-    setState(() { _isUploadingAvatar = true; });
+  Future<void> _onUpload(String imageUrl) async { /* ... (sin cambios en lógica, usar _isProcessing para _isUploadingAvatar) ... */
+    if(mounted) setState(() { _isProcessing = true; });
     final imageCacheService = Provider.of<ImageCacheService>(context, listen: false);
     final user = supabase.auth.currentUser;
 
     if (user == null) {
       if (mounted) _showCustomSnackBar('No hay sesión activa para subir avatar.', isError: true);
-      setState(() { _isUploadingAvatar = false; });
+      if(mounted) setState(() { _isProcessing = false; });
       return;
     }
 
@@ -181,13 +195,13 @@ class _AccountPageState extends State<AccountPage> {
       UserProfileData profileToUpdate = _userProfileBox.get(_userProfileHiveKey) ?? UserProfileData();
 
       profileToUpdate.avatarCacheKey = newAvatarCacheKey;
-      profileToUpdate.email = user.email; // Asegurar email de la sesión actual
+      profileToUpdate.email = user.email;
       if (profileToUpdate.username == null || profileToUpdate.username!.isEmpty) {
-        profileToUpdate.username = _usernameController.text.trim(); // Si no había username, tomar el actual del campo
+        profileToUpdate.username = _usernameController.text.trim();
       }
 
       await _userProfileBox.put(_userProfileHiveKey, profileToUpdate);
-      debugPrint("AccountPage _onUpload: avatarCacheKey en Hive actualizado a: $newAvatarCacheKey para ${user.email}");
+      // debugPrint("AccountPage _onUpload: avatarCacheKey en Hive actualizado a: $newAvatarCacheKey para ${user.email}");
 
       if (mounted) {
         _showCustomSnackBar('¡Imagen de perfil actualizada!');
@@ -198,35 +212,112 @@ class _AccountPageState extends State<AccountPage> {
     } catch (error) {
       if (mounted) _showCustomSnackBar('Error inesperado al subir la imagen.', isError: true);
     } finally {
-      if (mounted) setState(() { _isUploadingAvatar = false; });
+      if (mounted) setState(() { _isProcessing = false; });
     }
   }
 
-  Future<void> _signOut() async {
-    setState(() { _isSigningOut = true; });
+  // MODIFICADO: _signOut ahora se llama _handleLogoutWithPrompt
+  Future<void> _handleLogoutWithPrompt() async {
+    if (_isProcessing || !mounted) return; // Usar _isProcessing
+
+    final prefs = await SharedPreferences.getInstance();
+    final bool cloudSaveCurrentlyEnabled = prefs.getBool(cloudSavePreferenceKeyFromAccountPage) ?? false;
+
+    final mealLogBox = Hive.box<MealLog>(mealLogBoxName);
+    final overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName);
+    final bool hasLocalData = mealLogBox.isNotEmpty || overnightLogBox.isNotEmpty;
+    final bool isLoggedIn = supabase.auth.currentUser != null;
+
+    AccountPageLogoutPromptAction? userAction = AccountPageLogoutPromptAction.logoutWithoutUploading;
+
+    if (isLoggedIn && !cloudSaveCurrentlyEnabled && hasLocalData) {
+      if (!mounted) return;
+      userAction = await showDialog<AccountPageLogoutPromptAction>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Datos Locales Sin Sincronizar'),
+            content: const Text('Tienes registros locales que no se han guardado en la nube. ¿Deseas subirlos antes de cerrar sesión?'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () => Navigator.of(dialogContext).pop(AccountPageLogoutPromptAction.cancel),
+              ),
+              TextButton(
+                child: const Text('Cerrar Sin Subir'),
+                onPressed: () => Navigator.of(dialogContext).pop(AccountPageLogoutPromptAction.logoutWithoutUploading),
+              ),
+              ElevatedButton(
+                child: const Text('Subir y Cerrar Sesión'),
+                onPressed: () => Navigator.of(dialogContext).pop(AccountPageLogoutPromptAction.uploadAndLogout),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    if (!mounted || userAction == AccountPageLogoutPromptAction.cancel) {
+      return;
+    }
+
+    if (mounted) setState(() { _isProcessing = true; }); // Usar _isProcessing
+
+    if (userAction == AccountPageLogoutPromptAction.uploadAndLogout) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subiendo datos a la nube...'), duration: Duration(seconds: 3)),
+      );
+      int successCount = 0;
+      int errorCount = 0;
+      try {
+        for (var entry in mealLogBox.toMap().entries) {
+          try { await _logSyncServiceAccount.syncMealLog(entry.value, entry.key); successCount++; }
+          catch (e) { errorCount++; }
+        }
+        for (var entry in overnightLogBox.toMap().entries) {
+          try { await _logSyncServiceAccount.syncOvernightLog(entry.value, entry.key); successCount++; }
+          catch (e) { errorCount++; }
+        }
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Sincronización completada. Éxitos: $successCount, Errores: $errorCount'), backgroundColor: errorCount > 0 ? Colors.orange : Colors.green),
+          );
+        }
+      } catch (e) {
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al subir datos: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      }
+      // _isProcessing se pondrá a false en el finally del logout
+    }
+
     try {
       await supabase.auth.signOut();
-      await _userProfileBox.delete(_userProfileHiveKey);
+      await _userProfileBox.delete(_userProfileHiveKey); // Borrar perfil local al cerrar sesión
       debugPrint("AccountPage _signOut: Perfil de Hive borrado.");
       if (mounted) {
-        // Asegurar que la navegación ocurra después de que el estado de signOut se haya procesado
-        // y que el widget no intente reconstruirse con datos de usuario inválidos.
         GoRouter.of(context).go('/login');
       }
     } on AuthException catch (error) {
       if (mounted) _showCustomSnackBar(error.message, isError: true);
     } catch (error) {
-      if (mounted) _showCustomSnackBar('Error inesperado al cerrar sesión.', isError: true);
+      if (mounted) _showCustomSnackBar('Error inesperado al cerrar sesión: ${error.toString()}', isError: true);
     } finally {
-      // No establecer _isSigningOut a false si la navegación es exitosa,
-      // ya que la página se desmontará. Si la navegación falla, sí.
-      if (mounted && GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString() != '/login') {
-        setState(() { _isSigningOut = false; });
+      if (mounted) {
+        // Solo poner a false si no se ha navegado ya (porque el widget se desmontaría)
+        final router = GoRouter.of(context);
+        bool stillOnAccountPage = router.routerDelegate.currentConfiguration.matches.last.matchedLocation == '/account';
+        if (stillOnAccountPage) {
+          setState(() { _isProcessing = false; });
+        }
       }
     }
   }
 
-  Widget _buildAvatarDisplay(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildAvatarDisplay(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) { /* ... (sin cambios) ... */
     return Column(
       children: [
         Center(
@@ -247,8 +338,8 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildProfileForm(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
-    bool canUpdate = !_isLoadingPage && !_isSavingProfile && !_isUploadingAvatar && !_isSigningOut;
+  Widget _buildProfileForm(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) { /* ... (usar _isProcessing en onPressed) ... */
+    bool canUpdate = !_isProcessing; // Modificado
     return Card(
       elevation: 2,
       surfaceTintColor: colorScheme.surfaceTint,
@@ -262,6 +353,7 @@ class _AccountPageState extends State<AccountPage> {
           children: [
             TextFormField(
               controller: _usernameController,
+              enabled: canUpdate, // Modificado
               decoration: InputDecoration(
                 labelText: 'Nombre de Usuario',
                 hintText: 'Ingresa tu nombre de usuario',
@@ -284,9 +376,9 @@ class _AccountPageState extends State<AccountPage> {
                   child: Text(gender, style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
                 );
               }).toList(),
-              onChanged: (newValue) {
+              onChanged: canUpdate ? (newValue) { // Modificado
                 setState(() { _selectedGender = newValue; });
-              },
+              } : null,
               decoration: InputDecoration(
                 labelText: 'Género',
                 prefixIcon: Icon(Icons.wc_outlined, color: colorScheme.primary),
@@ -303,7 +395,7 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               icon: const Icon(Icons.save_alt_outlined),
-              label: Text(_isSavingProfile ? 'Guardando...' : 'Actualizar Perfil'),
+              label: Text(_isProcessing && _usernameController.text.isNotEmpty ? 'Guardando...' : 'Actualizar Perfil'), // Modificado para mostrar guardando si es relevante
               onPressed: canUpdate ? _updateProfile : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
@@ -311,7 +403,7 @@ class _AccountPageState extends State<AccountPage> {
                 padding: const EdgeInsets.symmetric(vertical: 14.0),
                 textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                elevation: _isSavingProfile ? 0 : 3,
+                elevation: _isProcessing ? 0 : 3, // Modificado
               ),
             ),
           ],
@@ -320,8 +412,8 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
-    bool canSignOut = !_isLoadingPage && !_isSavingProfile && !_isUploadingAvatar && !_isSigningOut;
+  Widget _buildActionButtons(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) { /* ... (usar _isProcessing en onPressed) ... */
+    bool canSignOut = !_isProcessing; // Modificado
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -329,14 +421,13 @@ class _AccountPageState extends State<AccountPage> {
         TextButton.icon(
           icon: Icon(Icons.logout, color: colorScheme.error),
           label: Text(
-            _isSigningOut ? 'Cerrando Sesión...' : 'Cerrar Sesión',
+            _isProcessing ? 'Procesando...' : 'Cerrar Sesión', // Modificado
             style: textTheme.labelLarge?.copyWith(color: colorScheme.error, fontWeight: FontWeight.bold),
           ),
-          onPressed: canSignOut ? _signOut : null,
+          onPressed: canSignOut ? _handleLogoutWithPrompt : null, // MODIFICADO para llamar al nuevo handler
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-            // overlayColor: MaterialStateProperty.all(colorScheme.error.withOpacity(0.1)), // M3 style
           ),
         ),
       ],
@@ -348,10 +439,8 @@ class _AccountPageState extends State<AccountPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Determina si alguna operación principal está en curso
-    final isAnyOperationPending = _isSavingProfile || _isUploadingAvatar || _isSigningOut;
-
-    if (_isLoadingPage && !isAnyOperationPending) { // Solo muestra el loader de página si no hay otra operación
+    // Usar _isProcessing para el loader de página inicial también (si _getProfile está cargando)
+    if (_isProcessing && _avatarUrl == null && _usernameController.text.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Perfil')),
         body: const Center(child: CircularProgressIndicator()),
@@ -388,7 +477,7 @@ class _AccountPageState extends State<AccountPage> {
                 const SizedBox(height: 20),
               ],
             ),
-            if (isAnyOperationPending) // Superposición de loader para operaciones en curso
+            if (_isProcessing) // Loader general para cualquier operación
               Container(
                 color: colorScheme.scrim.withValues(alpha:0.3),
                 child: const Center(child: CircularProgressIndicator()),
