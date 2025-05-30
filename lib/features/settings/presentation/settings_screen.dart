@@ -566,23 +566,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // --- FIN ListTile BORRAR ---
-
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: Icon(Icons.notifications_outlined, color: theme.colorScheme.primary),
-              title: Text('Notificaciones', style: theme.textTheme.titleMedium),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-              onTap: _isProcessingData ? null : () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pantalla de notificaciones no implementada.')),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
 
           Card(
             elevation: 2,
@@ -595,7 +578,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -608,7 +590,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context: context,
                   applicationName: 'Diabetes App',
                   applicationVersion: '1.0.0',
-                  applicationLegalese: '© ${DateTime.now().year} Tu Nombre/Compañía', // Considera actualizar esto
+                  applicationLegalese: '© ${DateTime.now().year} Marcos Plaza Piqueras (No soy una empresa)', // Considera actualizar esto
                   children: <Widget>[
                     Container(
                       padding: const EdgeInsets.only(top: 20, left: 10, right: 10),

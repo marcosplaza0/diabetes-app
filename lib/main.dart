@@ -11,6 +11,7 @@ import 'package:diabetes_2/core/theme/app_colors.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:diabetes_2/data/models/profile/user_profile_data.dart';
+import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart';
 import 'package:diabetes_2/core/services/image_cache_service.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +22,7 @@ import 'core/theme/theme_provider.dart';
 const String mealLogBoxName = 'meal_logs';
 const String overnightLogBoxName = 'overnight_logs';
 const String userProfileBoxName = "user_profile_box";
+const String dailyCalculationsBoxName = 'daily_calculations_box';
 
 /// Función principal que inicia la aplicación
 Future<void> main() async {
@@ -30,10 +32,12 @@ Future<void> main() async {
   Hive.registerAdapter(MealLogAdapter());
   Hive.registerAdapter(OvernightLogAdapter());
   Hive.registerAdapter(UserProfileDataAdapter());
+  Hive.registerAdapter(DailyCalculationDataAdapter());
 
   await Hive.openBox<MealLog>(mealLogBoxName);
   await Hive.openBox<OvernightLog>(overnightLogBoxName);
   await Hive.openBox<UserProfileData>(userProfileBoxName);
+  await Hive.openBox<DailyCalculationData>(dailyCalculationsBoxName);
 
   final themeProvider = ThemeProvider();
   final imageCacheService = ImageCacheService();

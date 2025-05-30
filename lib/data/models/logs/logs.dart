@@ -1,10 +1,10 @@
-// diabetes_2/data/models/logs/logs.dart
+// lib/data/models/logs/logs.dart
 import 'package:hive/hive.dart';
 
-part 'logs.g.dart'; // Importante: Este archivo se generará
+part 'logs.g.dart'; // Importante: Este archivo se generará/actualizará
 
-@HiveType(typeId: 0) // typeId debe ser único por clase
-class MealLog extends HiveObject { // Extender HiveObject es opcional pero útil para auto-increment keys, etc.
+@HiveType(typeId: 0)
+class MealLog extends HiveObject {
   @HiveField(0)
   DateTime startTime;
 
@@ -18,10 +18,21 @@ class MealLog extends HiveObject { // Extender HiveObject es opcional pero útil
   double insulinUnits;
 
   @HiveField(4)
-  double? finalBloodSugar; // Campo opcional
+  double? finalBloodSugar;
 
   @HiveField(5)
-  DateTime? endTime; // Campo opcional
+  DateTime? endTime;
+
+  // --- CAMPOS CALCULADOS ACTUALIZADOS ---
+  @HiveField(6) // Mismo índice que antes para ratioInsulinaCarbohidratosDiv10
+  double? ratioInsulinaCarbohidratosDiv10;
+
+  @HiveField(7) // Mismo índice que antes para desviacionGlucemicaCorregida, ahora 'desviacion'
+  double? desviacion; // RENOMBRADO
+
+  @HiveField(8) // Mismo índice que antes para indiceCompositoComida, ahora 'ratio_final'
+  double? ratioFinal; // RENOMBRADO Y NUEVA FÓRMULA
+  // --- FIN CAMPOS ACTUALIZADOS ---
 
   MealLog({
     required this.startTime,
@@ -30,6 +41,9 @@ class MealLog extends HiveObject { // Extender HiveObject es opcional pero útil
     required this.insulinUnits,
     this.finalBloodSugar,
     this.endTime,
+    this.ratioInsulinaCarbohidratosDiv10,
+    this.desviacion, // ACTUALIZADO
+    this.ratioFinal, // ACTUALIZADO
   });
 
   @override
@@ -40,12 +54,15 @@ class MealLog extends HiveObject { // Extender HiveObject es opcional pero útil
         'carbohydrates: $carbohydrates, '
         'insulinUnits: $insulinUnits, '
         'finalBloodSugar: $finalBloodSugar, '
-        'endTime: $endTime'
+        'endTime: $endTime, '
+        'ratioInsCarbDiv10: $ratioInsulinaCarbohidratosDiv10, '
+        'desviacion: $desviacion, ' // ACTUALIZADO
+        'ratioFinal: $ratioFinal' // ACTUALIZADO
         ')';
   }
 }
 
-@HiveType(typeId: 1) // typeId único y diferente del anterior
+@HiveType(typeId: 1)
 class OvernightLog extends HiveObject {
   @HiveField(0)
   DateTime bedTime;
@@ -57,7 +74,7 @@ class OvernightLog extends HiveObject {
   double slowInsulinUnits;
 
   @HiveField(3)
-  double? afterWakeUpBloodSugar; // Campo opcional
+  double? afterWakeUpBloodSugar;
 
   OvernightLog({
     required this.bedTime,
@@ -72,7 +89,7 @@ class OvernightLog extends HiveObject {
         'bedTime: $bedTime, '
         'beforeSleepBloodSugar: $beforeSleepBloodSugar, '
         'slowInsulinUnits: $slowInsulinUnits, '
-        'afterWakeUpBloodSugar: $afterWakeUpBloodSugar, '
+        'afterWakeUpBloodSugar: $afterWakeUpBloodSugar '
         ')';
   }
 }

@@ -6,12 +6,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:diabetes_2/features/home/presentation/home_screen.dart';
 import 'package:diabetes_2/features/historial/presentation/historial_screen.dart';
-import 'package:diabetes_2/features/food_injections/presentation/food_injections.dart';
+import 'package:diabetes_2/features/food_injections/presentation/food_injections_screen.dart';
 import 'package:diabetes_2/features/notes/presentation/log_screen.dart';
 import 'package:diabetes_2/core/auth/presentation/login_page.dart';
 import 'package:diabetes_2/core/auth/presentation/register_page.dart';
 import 'package:diabetes_2/core/auth/presentation/account_page.dart';
 import 'package:diabetes_2/features/settings/presentation/settings_screen.dart';
+import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_screen.dart';
+import 'package:diabetes_2/features/trends/presentation/tendencias_screen.dart';
 
 class GoRouterUtils {
   static final SupabaseClient _supabaseClient = Supabase.instance.client;
@@ -103,6 +105,20 @@ class GoRouterUtils {
         builder: (BuildContext context, GoRouterState state) {
           return const SettingsScreen(); // Usar const si es posible
         },
+      ),
+      GoRoute(
+        path: '/data/trends',
+        name: 'trends',
+        builder: (BuildContext context, GoRouterState state) {
+          return const TrendsScreen(); // Usar const si es posible
+        },
+      ),
+      GoRoute(
+        path: '/data/trend_graph',
+        name: 'trendsGraph',
+        builder: (BuildContext context, GoRouterState state) {
+          return const TendenciasGraphScreen(); // Usar const si es
+        }
       ),
     ],
   );

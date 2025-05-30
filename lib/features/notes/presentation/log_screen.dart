@@ -7,9 +7,12 @@ import 'package:intl/intl.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
-import 'package:diabetes_2/main.dart' show supabase;
+import 'package:diabetes_2/main.dart' show supabase, dailyCalculationsBoxName; // Importar dailyCalculationsBoxName
+import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Importar DailyCalculationData
 
-import 'package:uuid/uuid.dart'; // <--- IMPORTACIÓN UUID
+import 'package:uuid/uuid.dart';
+
+import 'package:diabetes_2/core/services/diabetes_calculator_service.dart';
 
 // Nombres de las cajas de Hive y clave de SharedPreferences
 const String mealLogBoxNameFromScreen = 'meal_logs';
@@ -28,7 +31,7 @@ const double kButtonVerticalPadding = 12.0;
 const double kButtonFontSize = 16.0;
 
 class DiabetesLogScreen extends StatefulWidget {
-  final String? logKey; // MODIFICADO: Ahora es String? para UUIDs
+  final String? logKey;
   final String? logTypeString;
 
   const DiabetesLogScreen({
@@ -62,15 +65,20 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
   late Box<MealLog> _mealLogBox;
   late Box<OvernightLog> _overnightLogBox;
+  late Box<DailyCalculationData> _dailyCalculationsBox; // Caja para los cálculos diarios
 
   final SupabaseLogSyncService _logSyncService = SupabaseLogSyncService();
-  final Uuid _uuid = const Uuid(); // Instancia de Uuid
+  final Uuid _uuid = const Uuid();
+
+  final DiabetesCalculatorService _calculatorService = DiabetesCalculatorService();
+
 
   @override
   void initState() {
     super.initState();
     _mealLogBox = Hive.box<MealLog>(mealLogBoxNameFromScreen);
     _overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxNameFromScreen);
+    _dailyCalculationsBox = Hive.box<DailyCalculationData>(dailyCalculationsBoxName); // Inicializar la nueva caja
 
     if (widget.logKey != null && widget.logTypeString != null) {
       _isEditMode = true;
@@ -101,9 +109,9 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
     dynamic logToEdit;
     if (_currentLogType == LogType.meal) {
-      logToEdit = _mealLogBox.get(widget.logKey!); // widget.logKey es String (UUID)
+      logToEdit = _mealLogBox.get(widget.logKey!);
     } else {
-      logToEdit = _overnightLogBox.get(widget.logKey!); // widget.logKey es String (UUID)
+      logToEdit = _overnightLogBox.get(widget.logKey!);
     }
 
     if (logToEdit == null) {
@@ -127,6 +135,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         _carbohydratesController.text = mealLog.carbohydrates.toStringAsFixed(0);
         _fastInsulinController.text = mealLog.insulinUnits.toStringAsFixed(1);
         _finalBloodSugarController.text = mealLog.finalBloodSugar?.toStringAsFixed(0) ?? '';
+        // No cargamos indiceFinal aquí para editar, ya que se recalculará al guardar.
       });
     } else if (logToEdit is OvernightLog) {
       final overnightLog = logToEdit;
@@ -283,7 +292,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
             }),
           ),
           const SizedBox(height: kVerticalSpacerSmall),
-          Text("Detalles de la Comida", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          Text("Detalles de la Comida", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.secondary)),
           const SizedBox(height: kVerticalSpacerSmall),
           _buildNumericTextField(
             controller: _initialBloodSugarController,
@@ -301,7 +310,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
             icon: Icons.colorize_outlined,
           ),
           const SizedBox(height: kVerticalSpacerMedium),
-          Text("Post-Comida ~3 horas después", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          Text("Post-Comida (opcional, ~3 horas después)", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.secondary)),
           const SizedBox(height: kVerticalSpacerSmall),
           _buildNumericTextField(
             controller: _finalBloodSugarController,
@@ -340,7 +349,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
             }),
           ),
           const SizedBox(height: kVerticalSpacerSmall),
-          Text("Detalles Nocturnos", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          Text("Detalles Nocturnos", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.secondary)),
           const SizedBox(height: kVerticalSpacerSmall),
           _buildNumericTextField(
             controller: _beforeSleepBloodSugarController,
@@ -353,7 +362,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
             icon: Icons.colorize_outlined,
           ),
           const SizedBox(height: kVerticalSpacerMedium),
-          Text("Al Despertar (opcional)", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+          Text("Al Despertar (opcional)", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.secondary)),
           const SizedBox(height: kVerticalSpacerSmall),
           _buildNumericTextField(
             controller: _afterWakeUpBloodSugarController,
@@ -432,41 +441,76 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       mealEventEndTime = mealEventStartTime.add(const Duration(hours: 3));
     }
 
-    final mealLog = MealLog(
+    // Crear el objeto MealLog inicial (sin indiceFinal, ya que se calculará después)
+    MealLog mealLog = MealLog( // <- Hacerlo no final para poder reasignar después de obtener de Hive
       startTime: mealEventStartTime,
       initialBloodSugar: initialBloodSugar,
       carbohydrates: carbohydrates,
       insulinUnits: fastInsulin,
       finalBloodSugar: finalBloodSugar,
       endTime: mealEventEndTime,
+      // indiceFinal se deja null aquí; se calculará y actualizará por el servicio
     );
 
     try {
       String message;
-      String currentHiveKey; // Ahora siempre será String (UUID)
+      String currentHiveKey;
 
       if (_isEditMode) {
-        currentHiveKey = widget.logKey!; // Ya es un String (UUID) del parámetro del widget
+        currentHiveKey = widget.logKey!;
         await _mealLogBox.put(currentHiveKey, mealLog);
         message = 'Nota de comida actualizada en Hive';
       } else {
-        currentHiveKey = _uuid.v4(); // Generar nuevo UUID para la nueva nota
-        await _mealLogBox.put(currentHiveKey, mealLog); // Usar .put con el UUID
+        currentHiveKey = _uuid.v4();
+        await _mealLogBox.put(currentHiveKey, mealLog);
         message = 'Nota de comida guardada en Hive';
       }
-      debugPrint('$message: $mealLog con clave de Hive (UUID): $currentHiveKey');
+      debugPrint('$message (pre-cálculos): $mealLog con clave de Hive (UUID): $currentHiveKey');
 
+      // Obtener la fecha normalizada del log para los cálculos
+      final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
+
+      // 1. Actualizar cálculos (esto actualizará el MealLog en Hive con indiceFinal y también DailyCalculationData)
+      try {
+        await _calculatorService.updateCalculationsForDay(dateOfLog);
+        debugPrint("Cálculos actualizados para el día del MealLog: $dateOfLog");
+      } catch (e) {
+        debugPrint("Error actualizando cálculos para $dateOfLog: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error actualizando estadísticas diarias: ${e.toString()}'), backgroundColor: Colors.amber.shade800),
+          );
+        }
+      }
+
+      // 2. Sincronización con Supabase si está activado
       final prefs = await SharedPreferences.getInstance();
       final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
       final bool isLoggedIn = supabase.auth.currentUser != null;
 
       if (cloudSaveEnabled && isLoggedIn) {
-        await _logSyncService.syncMealLog(mealLog, currentHiveKey);
-        message += ' y sincronizada con la nube.';
-        debugPrint("MealLog sincronizado a Supabase con clave de Hive (UUID) $currentHiveKey.");
+        // Obtener el MealLog ACTUALIZADO de Hive (que ahora debería tener indiceFinal)
+        final MealLog? updatedMealLogFromHive = _mealLogBox.get(currentHiveKey);
+        if (updatedMealLogFromHive != null) {
+          await _logSyncService.syncMealLog(updatedMealLogFromHive, currentHiveKey);
+          message += ' y sincronizada con la nube (con cálculos).';
+
+          // También sincronizar DailyCalculationData para este día
+          final dailyCalcKey = DateFormat('yyyy-MM-dd').format(dateOfLog);
+          final DailyCalculationData? dailyCalcData = _dailyCalculationsBox.get(dailyCalcKey);
+          if (dailyCalcData != null) {
+            await _logSyncService.syncDailyCalculation(dailyCalcData);
+            debugPrint("DailyCalculationData para $dailyCalcKey sincronizado a Supabase.");
+          } else {
+            debugPrint("ADVERTENCIA: No se encontró DailyCalculationData para $dailyCalcKey para sincronizar.");
+          }
+
+        } else {
+          message += ', error al obtener log actualizado de Hive para sincronizar.';
+          debugPrint("ERROR: MealLog no encontrado en Hive con la clave $currentHiveKey después de actualizar cálculos.");
+        }
       } else if (cloudSaveEnabled && !isLoggedIn) {
         message += ', pero no se pudo sincronizar (no has iniciado sesión).';
-        debugPrint("MealLog NO sincronizado: Usuario no logueado.");
       }
 
       if (!mounted) return;
@@ -475,7 +519,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       if (Navigator.canPop(context)) Navigator.pop(context);
 
     } catch (e) {
-      debugPrint('Error al guardar/actualizar MealLog: $e');
+      debugPrint('Error al guardar/actualizar MealLog y sus cálculos/sincronización: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar/actualizar: ${e.toString()}'), backgroundColor: Colors.red));
     }
@@ -515,15 +559,15 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
     try {
       String message;
-      String currentHiveKey; // Ahora siempre será String (UUID)
+      String currentHiveKey;
 
       if (_isEditMode) {
-        currentHiveKey = widget.logKey!; // Ya es un String (UUID)
+        currentHiveKey = widget.logKey!;
         await _overnightLogBox.put(currentHiveKey, overnightLog);
         message = 'Nota de noche actualizada en Hive';
       } else {
-        currentHiveKey = _uuid.v4(); // Generar nuevo UUID
-        await _overnightLogBox.put(currentHiveKey, overnightLog); // Usar .put con UUID
+        currentHiveKey = _uuid.v4();
+        await _overnightLogBox.put(currentHiveKey, overnightLog);
         message = 'Nota de noche guardada en Hive';
       }
       debugPrint('$message: $overnightLog con clave de Hive (UUID): $currentHiveKey');
@@ -540,6 +584,13 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         message += ', pero no se pudo sincronizar (no has iniciado sesión).';
         debugPrint("OvernightLog NO sincronizado: Usuario no logueado.");
       }
+
+      // Actualmente, los OvernightLogs no disparan recálculos con DiabetesCalculatorService.
+      // Si en el futuro necesitas que actualicen DailyCalculationData (ej. si OvernightLog
+      // influyera en totalMealInsulin, lo cual no parece el caso), aquí llamarías a:
+      // final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
+      // await _calculatorService.updateCalculationsForDay(dateOfLog);
+      // Y luego sincronizarías el DailyCalculationData si cloudSaveEnabled es true.
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));

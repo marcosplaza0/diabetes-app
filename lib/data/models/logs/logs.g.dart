@@ -23,13 +23,16 @@ class MealLogAdapter extends TypeAdapter<MealLog> {
       insulinUnits: fields[3] as double,
       finalBloodSugar: fields[4] as double?,
       endTime: fields[5] as DateTime?,
+      ratioInsulinaCarbohidratosDiv10: fields[6] as double?,
+      desviacion: fields[7] as double?,
+      ratioFinal: fields[8] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MealLog obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.startTime)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class MealLogAdapter extends TypeAdapter<MealLog> {
       ..writeByte(4)
       ..write(obj.finalBloodSugar)
       ..writeByte(5)
-      ..write(obj.endTime);
+      ..write(obj.endTime)
+      ..writeByte(6)
+      ..write(obj.ratioInsulinaCarbohidratosDiv10)
+      ..writeByte(7)
+      ..write(obj.desviacion)
+      ..writeByte(8)
+      ..write(obj.ratioFinal);
   }
 
   @override

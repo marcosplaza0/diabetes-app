@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:diabetes_2/data/models/logs/logs.dart';
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Nombres de cajas
+import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName;
 
 class DailyLogListWidget extends StatefulWidget {
   final DateTime selectedDate;
@@ -26,8 +26,8 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
   @override
   void initState() {
     super.initState();
-    _mealLogBox = Hive.box<MealLog>(mealLogBoxName);
-    _overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName);
+    _mealLogBox = Hive.box<MealLog>(mealLogBoxName); //
+    _overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName); //
   }
 
   List<dynamic> _getFilteredAndSortedLogs() {
@@ -54,49 +54,74 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
     return dailyLogs;
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value, {Color? iconColor}) {
+  Color _getGlucoseColor(double? bG, ThemeData theme) {
+    if (bG == null) return theme.colorScheme.onSurfaceVariant.withOpacity(0.7);
+    if (bG < 70) return theme.colorScheme.error; // Hypo
+    if (bG > 180) return Colors.red.shade700; // Hyper - Strong Red
+    return Colors.green.shade600; // In range
+  }
+
+  Widget _buildDetailItem(BuildContext context, IconData icon, String label, String value, {Color? valueColor, Color? iconColor}) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18.0, color: iconColor ?? theme.colorScheme.onSurfaceVariant),
+          Icon(icon, size: 18.0, color: iconColor ?? theme.colorScheme.onSurfaceVariant.withOpacity(0.9)),
           const SizedBox(width: 10.0),
-          Text('$label ', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurfaceVariant)),
           Expanded(
               child: Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
-                textAlign: TextAlign.end,
-                softWrap: true,
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)
               )
+          ),
+          const SizedBox(width: 8.0),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? theme.colorScheme.onSurface
+            ),
+            textAlign: TextAlign.end,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMealLogTile(MealLog log) {
+  Widget _buildGlucoseDetailItem(BuildContext context, String label, double? glucoseValue, IconData icon) {
     final theme = Theme.of(context);
-    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode);
-    final titleStyle = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface);
+    final Color glucoseColor = _getGlucoseColor(glucoseValue, theme);
+    return _buildDetailItem(
+        context,
+        icon,
+        label,
+        glucoseValue != null ? '${glucoseValue.toStringAsFixed(0)} mg/dL' : '-- mg/dL',
+        valueColor: glucoseColor,
+        iconColor: glucoseColor.withOpacity(0.85)
+    );
+  }
+
+
+  Widget _buildMealLogTile(MealLog log, ThemeData theme) {
+    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode); //
 
     return Card(
       elevation: 2.0,
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)), // Enhanced radius
+      color: theme.colorScheme.surfaceContainer, // M3 Surface color
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          // log.key ahora será el String UUID si se guardó con .put(uuid, log)
           if (log.key != null) {
-            final String logKeyString = log.key.toString(); // Ya es String (UUID)
-            context.pushNamed(
-              'diabetesLogEdit',
+            final String logKeyString = log.key.toString();
+            context.pushNamed( //
+              'diabetesLogEdit', //
               pathParameters: {
                 'logTypeString': 'meal',
-                'logKeyString': logKeyString, // Pasa el UUID String
+                'logKeyString': logKeyString,
               },
             );
           } else {
@@ -105,7 +130,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
             );
           }
         },
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(16.0),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -115,25 +140,26 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                 children: [
                   CircleAvatar(
                     backgroundColor: theme.colorScheme.primaryContainer,
-                    radius: 20,
+                    radius: 22, // Slightly larger
                     child: Icon(Icons.restaurant_menu_rounded, color: theme.colorScheme.onPrimaryContainer, size: 22),
                   ),
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: Text(
                       'Comida - ${timeFormat.format(log.startTime)}',
-                      style: titleStyle,
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                     ),
                   ),
+                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7))
                 ],
               ),
-              const SizedBox(height: 12.0),
-              _buildInfoRow(context, Icons.opacity_rounded, 'Glucosa Inicial:', '${log.initialBloodSugar.toStringAsFixed(0)} mg/dL', iconColor: Colors.redAccent.shade200),
-              _buildInfoRow(context, Icons.bakery_dining_rounded, 'Carbohidratos:', '${log.carbohydrates.toStringAsFixed(0)} g', iconColor: Colors.brown.shade400),
-              _buildInfoRow(context, Icons.colorize_rounded, 'Insulina Rápida:', '${log.insulinUnits.toStringAsFixed(1)} U', iconColor: Colors.blueAccent.shade200),
+              const Divider(height: 20.0, thickness: 0.5),
+              _buildGlucoseDetailItem(context, 'Glucosa Inicial:', log.initialBloodSugar, Icons.arrow_upward_rounded),
+              _buildDetailItem(context, Icons.lunch_dining_outlined, 'Carbohidratos:', '${log.carbohydrates.toStringAsFixed(0)} g', iconColor: theme.colorScheme.tertiary),
+              _buildDetailItem(context, Icons.opacity_rounded, 'Insulina Rápida:', '${log.insulinUnits.toStringAsFixed(1)} U', iconColor: theme.colorScheme.secondary),
               if (log.finalBloodSugar != null) ...[
-                const Divider(height: 20.0, thickness: 0.5),
-                _buildInfoRow(context, Icons.opacity_outlined, 'Glucosa Final:', '${log.finalBloodSugar?.toStringAsFixed(0)} mg/dL ${log.endTime != null ? "(${timeFormat.format(log.endTime!)})" : ""}', iconColor: Colors.red.shade300),
+                const SizedBox(height: 6),
+                _buildGlucoseDetailItem(context, 'Glucosa Final ${log.endTime != null ? "(${timeFormat.format(log.endTime!)})" : ""}:', log.finalBloodSugar, Icons.arrow_downward_rounded),
               ]
             ],
           ),
@@ -142,26 +168,23 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
     );
   }
 
-  Widget _buildOvernightLogTile(OvernightLog log) {
-    final theme = Theme.of(context);
-    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode);
-    final titleStyle = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface);
-
+  Widget _buildOvernightLogTile(OvernightLog log, ThemeData theme) {
+    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode); //
     return Card(
       elevation: 2.0,
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      color: theme.colorScheme.surfaceContainer,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          // log.key ahora será el String UUID
           if (log.key != null) {
-            final String logKeyString = log.key.toString(); // Ya es String (UUID)
-            context.pushNamed( // Usar pushNamed para consistencia
-              'diabetesLogEdit',
+            final String logKeyString = log.key.toString();
+            context.pushNamed( //
+              'diabetesLogEdit', //
               pathParameters: {
                 'logTypeString': 'overnight',
-                'logKeyString': logKeyString, // Pasa el UUID String
+                'logKeyString': logKeyString,
               },
             );
           } else {
@@ -170,7 +193,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
             );
           }
         },
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(16.0),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -180,24 +203,25 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                 children: [
                   CircleAvatar(
                     backgroundColor: theme.colorScheme.secondaryContainer,
-                    radius: 20,
+                    radius: 22,
                     child: Icon(Icons.bedtime_rounded, color: theme.colorScheme.onSecondaryContainer, size: 22),
                   ),
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: Text(
                       'Noche - ${timeFormat.format(log.bedTime)}',
-                      style: titleStyle,
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                     ),
                   ),
+                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7))
                 ],
               ),
-              const SizedBox(height: 12.0),
-              _buildInfoRow(context, Icons.nights_stay_rounded, 'Glucosa al dormir:', '${log.beforeSleepBloodSugar.toStringAsFixed(0)} mg/dL', iconColor: Colors.deepPurpleAccent.shade100),
-              _buildInfoRow(context, Icons.colorize_outlined, 'Insulina Lenta:', '${log.slowInsulinUnits.toStringAsFixed(1)} U', iconColor: Colors.teal.shade300),
+              const Divider(height: 20.0, thickness: 0.5),
+              _buildGlucoseDetailItem(context, 'Glucosa al Dormir:', log.beforeSleepBloodSugar, Icons.nights_stay_rounded),
+              _buildDetailItem(context, Icons.medication_liquid_outlined, 'Insulina Lenta:', '${log.slowInsulinUnits.toStringAsFixed(1)} U', iconColor: theme.colorScheme.tertiary),
               if (log.afterWakeUpBloodSugar != null) ...[
-                const Divider(height: 20.0, thickness: 0.5),
-                _buildInfoRow(context, Icons.wb_sunny_rounded, 'Glucosa al despertar:', '${log.afterWakeUpBloodSugar?.toStringAsFixed(0)} mg/dL', iconColor: Colors.orange.shade400),
+                const SizedBox(height: 6),
+                _buildGlucoseDetailItem(context, 'Glucosa al Despertar:', log.afterWakeUpBloodSugar, Icons.wb_sunny_rounded),
               ]
             ],
           ),
@@ -208,6 +232,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ValueListenableBuilder<Box<MealLog>>(
       valueListenable: _mealLogBox.listenable(),
       builder: (context, mealBox, _) {
@@ -219,22 +244,27 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
             if (logsToShow.isEmpty) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(32.0), // More padding
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.event_note_outlined, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha:0.7)),
+                      Icon(Icons.forum_outlined, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)), // Changed icon
                       const SizedBox(height: 20),
                       Text(
-                        'No hay notas registradas para el día ${DateFormat('dd MMMM yyyy', Localizations.localeOf(context).toLanguageTag()).format(widget.selectedDate)}.',
+                        'No hay registros para el', // Changed text
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8)),
+                      ),
+                      Text(
+                        DateFormat('EEEE dd MMMM', 'es_ES').format(widget.selectedDate), // Format date more nicely
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Puedes añadir nuevas notas desde la pantalla de inicio.",
+                        "Puedes añadir nuevas notas desde la pantalla de inicio o usando el botón '+' en algunas pantallas.", // Updated guidance
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha:0.8)),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
                       ),
                     ],
                   ),
@@ -243,14 +273,15 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
             }
 
             return ListView.builder(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Added scroll physics
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
               itemCount: logsToShow.length,
               itemBuilder: (context, index) {
                 final log = logsToShow[index];
                 if (log is MealLog) {
-                  return _buildMealLogTile(log);
+                  return _buildMealLogTile(log, theme);
                 } else if (log is OvernightLog) {
-                  return _buildOvernightLogTile(log);
+                  return _buildOvernightLogTile(log, theme);
                 }
                 return const SizedBox.shrink();
               },
