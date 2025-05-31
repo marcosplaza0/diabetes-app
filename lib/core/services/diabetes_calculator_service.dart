@@ -1,24 +1,26 @@
 // lib/core/services/diabetes_calculator_service.dart
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' hide DayPeriod;
-import 'package:hive/hive.dart';
+import 'package:hive/hive.dart'; // Necesario para DailyCalculationDataBox
 import 'package:intl/intl.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart';
-import 'package:diabetes_2/main.dart' show mealLogBoxName, dailyCalculationsBoxName;
+import 'package:diabetes_2/main.dart' show dailyCalculationsBoxName; // Solo para dailyCalculationsBoxName
+import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importar el repositorio
 
 class DiabetesCalculatorService {
-  late final Box<MealLog> _mealLogBox;
+  final LogRepository _logRepository;
   late final Box<DailyCalculationData> _dailyCalculationsBox;
 
-  DiabetesCalculatorService() {
-    if (Hive.isBoxOpen(mealLogBoxName) && Hive.isBoxOpen(dailyCalculationsBoxName)) {
-      _mealLogBox = Hive.box<MealLog>(mealLogBoxName);
+  DiabetesCalculatorService({required LogRepository logRepository}) // Constructor actualizado
+      : _logRepository = logRepository {
+    if (Hive.isBoxOpen(dailyCalculationsBoxName)) {
       _dailyCalculationsBox = Hive.box<DailyCalculationData>(dailyCalculationsBoxName);
     } else {
-      throw Exception("DiabetesCalculatorService: Hive boxes not open.");
+      throw Exception("DiabetesCalculatorService: DailyCalculationsBox not open.");
     }
   }
+
 
   DayPeriod getDayPeriod(DateTime dateTime) {
     final time = TimeOfDay.fromDateTime(dateTime);
@@ -36,12 +38,10 @@ class DiabetesCalculatorService {
     return DayPeriod.Unknown;
   }
 
-  Map<String, double?> _calculateDailyInsulinAndCorrectionIndex(DateTime date) {
+  Future<Map<String, double?>> _calculateDailyInsulinAndCorrectionIndex(DateTime date) async {
     double totalInsulin = 0;
-    final relevantLogs = _mealLogBox.values.where((log) =>
-    log.startTime.year == date.year &&
-        log.startTime.month == date.month &&
-        log.startTime.day == date.day);
+    // Usar el repositorio para obtener los logs
+    final relevantLogs = await _logRepository.getMealLogsForDate(date);
 
     for (var log in relevantLogs) {
       totalInsulin += log.insulinUnits;
@@ -67,7 +67,8 @@ class DiabetesCalculatorService {
       if (dailyData?.dailyCorrectionIndex != null) {
         dailyIndices.add(dailyData!.dailyCorrectionIndex!);
       } else {
-        final calculatedOnFly = _calculateDailyInsulinAndCorrectionIndex(date);
+        // Si no está precalculado, se calcula al vuelo
+        final calculatedOnFly = await _calculateDailyInsulinAndCorrectionIndex(date);
         if (calculatedOnFly['dailyCorrectionIndex'] != null) {
           dailyIndices.add(calculatedOnFly['dailyCorrectionIndex']!);
         }
@@ -85,42 +86,32 @@ class DiabetesCalculatorService {
     DailyCalculationData dailyData = _dailyCalculationsBox.get(dateKey) ??
         DailyCalculationData(date: normalizedDate, periodFinalIndexAverage: {});
 
-    final dailyInsulinCalculations = _calculateDailyInsulinAndCorrectionIndex(normalizedDate);
+    final dailyInsulinCalculations = await _calculateDailyInsulinAndCorrectionIndex(normalizedDate);
     dailyData.totalMealInsulin = dailyInsulinCalculations['totalMealInsulin'];
     dailyData.dailyCorrectionIndex = dailyInsulinCalculations['dailyCorrectionIndex'];
 
-    // Este es el índice de corrección DEL DÍA ACTUAL, que se usará para calcular 'desviacion'.
     final double? correctionIndexForDeviation = dailyData.dailyCorrectionIndex;
 
-    final List<MealLog> mealLogsForDay = _mealLogBox.values.where((log) {
-      final logDate = log.startTime;
-      return logDate.year == normalizedDate.year &&
-          logDate.month == normalizedDate.month &&
-          logDate.day == normalizedDate.day;
-    }).toList();
+    // Obtener logs del día usando el repositorio
+    final List<MealLog> mealLogsForDay = await _logRepository.getMealLogsForDate(normalizedDate);
 
     bool mealLogUpdated = false;
     for (var mealLog in mealLogsForDay) {
       double? ratioInsCarbDiv10;
-      double? currentDesviacion; // Renombrado para evitar confusión con el campo del log
-      double? currentRatioFinal; // Renombrado
+      double? currentDesviacion;
+      double? currentRatioFinal;
 
-      // Calcular ratio_insulina_carbohidratos_div10
       if (mealLog.carbohydrates > 0) {
-        ratioInsCarbDiv10 = mealLog.insulinUnits / (mealLog.carbohydrates/ 10.0);
+        ratioInsCarbDiv10 = mealLog.insulinUnits / (mealLog.carbohydrates / 10.0);
       }
 
-      // Calcular desviacion
-      // Usando la fórmula: (glucemia_inicial - glucemia_final) / indice_de_correccion_DEL_DIA
       if (mealLog.finalBloodSugar != null &&
           correctionIndexForDeviation != null &&
           correctionIndexForDeviation > 0) {
         currentDesviacion = (mealLog.finalBloodSugar! - mealLog.initialBloodSugar) / correctionIndexForDeviation;
       }
 
-      // Calcular ratio_final (NUEVA FÓRMULA PROPORCIONADA)
-      // ratio_final = (mealLog.insulinUnits + ((mealLog.initialBloodSugar - mealLog.finalBloodSugar!) / correctionIndexForDeviation)) / (mealLog.carbohydrates / 10)
-      if (mealLog.carbohydrates > 0 && (mealLog.carbohydrates / 10.0) != 0) { // Evitar división por cero
+      if (mealLog.carbohydrates > 0 && (mealLog.carbohydrates / 10.0) != 0) {
         double? correctionComponent;
         if (mealLog.finalBloodSugar != null && correctionIndexForDeviation != null && correctionIndexForDeviation > 0) {
           correctionComponent = (mealLog.finalBloodSugar! - mealLog.initialBloodSugar) / correctionIndexForDeviation;
@@ -129,47 +120,42 @@ class DiabetesCalculatorService {
         if (correctionComponent != null) {
           currentRatioFinal = (mealLog.insulinUnits + correctionComponent) / (mealLog.carbohydrates / 10.0);
         } else {
-          // Si no se puede calcular el componente de corrección, ratio_final es solo basado en insulina/CH
           currentRatioFinal = (mealLog.insulinUnits) / (mealLog.carbohydrates / 10.0);
         }
       }
 
-
-      // Calcular la 'desviacion' según la nueva fórmula: ratio_final - ratio_insulina_carbohidratos_div10
-      // Esto sobreescribe el 'currentDesviacion' calculado antes si 'currentRatioFinal' y 'ratioInsCarbDiv10' están disponibles.
       if (currentRatioFinal != null && ratioInsCarbDiv10 != null) {
         currentDesviacion = currentRatioFinal - ratioInsCarbDiv10;
       }
 
-
-      // Actualizar el MealLog en Hive si algún campo cambió
       if (mealLog.ratioInsulinaCarbohidratosDiv10 != ratioInsCarbDiv10 ||
-          mealLog.desviacion != currentDesviacion || // Comparar con el nuevo 'desviacion'
-          mealLog.ratioFinal != currentRatioFinal) { // Comparar con el nuevo 'ratio_final'
+          mealLog.desviacion != currentDesviacion ||
+          mealLog.ratioFinal != currentRatioFinal) {
 
         mealLog.ratioInsulinaCarbohidratosDiv10 = ratioInsCarbDiv10;
-        mealLog.desviacion = currentDesviacion; // Guardar el 'desviacion' recalculado
-        mealLog.ratioFinal = currentRatioFinal; // Guardar el 'ratio_final'
+        mealLog.desviacion = currentDesviacion;
+        mealLog.ratioFinal = currentRatioFinal;
 
-        await _mealLogBox.put(mealLog.key, mealLog);
-        mealLogUpdated = true;
+        // Guardar el MealLog actualizado usando el repositorio
+        // Asumimos que mealLog.key (que es dynamic) es el String UUID correcto.
+        // El repositorio se encargará de la persistencia en Hive y de la sincronización con Supabase.
+        if (mealLog.key != null) {
+          await _logRepository.saveMealLog(mealLog, mealLog.key as String);
+          mealLogUpdated = true;
+        } else {
+          debugPrint("DiabetesCalculatorService: ADVERTENCIA - MealLog no tiene clave, no se puede guardar a través del repositorio.");
+        }
       }
     }
     if (mealLogUpdated) {
-      debugPrint("MealLogs actualizados con nuevos campos calculados para el $dateKey");
+      debugPrint("MealLogs actualizados con nuevos campos calculados para el $dateKey via LogRepository");
     }
 
-    // Recalcular promedios de ratio_final por período
-    final potentiallyUpdatedMealLogsForDay = _mealLogBox.values.where((log) {
-      final logDate = log.startTime;
-      return logDate.year == normalizedDate.year &&
-          logDate.month == normalizedDate.month &&
-          logDate.day == normalizedDate.day;
-    });
+    // Recalcular promedios de ratio_final por período usando logs potencialmente actualizados (re-fetch o usar la lista ya obtenida)
+    final potentiallyUpdatedMealLogsForDay = await _logRepository.getMealLogsForDate(normalizedDate);
 
     Map<String, List<double>> periodIndicesCollector = {};
     for (var mealLog in potentiallyUpdatedMealLogsForDay) {
-      // Ahora promediamos el 'ratioFinal'
       if (mealLog.ratioFinal != null) {
         DayPeriod period = getDayPeriod(mealLog.startTime);
         if (period != DayPeriod.Unknown) {
@@ -193,50 +179,45 @@ class DiabetesCalculatorService {
   }
 
   Future<void> reprocessAllLogs({bool forceAllDays = false}) async {
-    debugPrint("Iniciando reprocesamiento de todos los logs...");
+    debugPrint("Iniciando reprocesamiento de todos los logs via LogRepository...");
     Set<DateTime> uniqueDates = {};
 
-    for (var logKey in _mealLogBox.keys) {
-      var log = _mealLogBox.get(logKey);
-      if (log != null) {
-        if (forceAllDays ||
-            log.ratioInsulinaCarbohidratosDiv10 == null ||
-            log.desviacion == null || // Usar el nuevo nombre de campo
-            log.ratioFinal == null) { // Usar el nuevo nombre de campo
-          uniqueDates.add(DateTime(log.startTime.year, log.startTime.month, log.startTime.day));
-        }
+    // Obtener todos los mealLogs usando el repositorio
+    final allMealLogsMap = await _logRepository.getAllMealLogsMappedByKey();
+
+    for (var logEntry in allMealLogsMap.entries) {
+      var log = logEntry.value;
+      if (forceAllDays ||
+          log.ratioInsulinaCarbohidratosDiv10 == null ||
+          log.desviacion == null ||
+          log.ratioFinal == null) {
+        uniqueDates.add(DateTime(log.startTime.year, log.startTime.month, log.startTime.day));
       }
     }
 
     List<DateTime> sortedDates = uniqueDates.toList()..sort((a,b) => a.compareTo(b));
-
     debugPrint("Se reprocesarán ${sortedDates.length} días.");
 
     for (int i = 0; i < sortedDates.length; i++) {
       DateTime date = sortedDates[i];
       debugPrint("Reprocesando día ${i+1}/${sortedDates.length}: ${DateFormat('yyyy-MM-dd').format(date)}");
-      await updateCalculationsForDay(date);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await updateCalculationsForDay(date); // updateCalculationsForDay ya usa el repositorio
+      await Future.delayed(const Duration(milliseconds: 50)); // Pequeña pausa
     }
     debugPrint("Reprocesamiento de todos los logs completado.");
   }
+
   Future<double?> getAverageRatioInsulinaCarbohidratosDiv10ForPeriod(
       {required DayPeriod period, int days = 7, DateTime? endDate}) async {
     endDate ??= DateTime.now();
     List<double> ratios = [];
+    final startDate = endDate.subtract(Duration(days: days -1));
 
-    for (int i = 0; i < days; i++) {
-      final date = endDate.subtract(Duration(days: i));
-      final mealLogsForDayAndPeriod = _mealLogBox.values.where((log) {
-        final logDate = log.startTime;
-        return logDate.year == date.year &&
-            logDate.month == date.month &&
-            logDate.day == date.day &&
-            getDayPeriod(log.startTime) == period &&
-            log.ratioInsulinaCarbohidratosDiv10 != null;
-      });
+    // Obtener logs para el rango de fechas completo una vez
+    final logsInRange = await _logRepository.getMealLogsInDateRange(DateTime(startDate.year, startDate.month, startDate.day), endDate);
 
-      for (var log in mealLogsForDayAndPeriod) {
+    for (var log in logsInRange) {
+      if (getDayPeriod(log.startTime) == period && log.ratioInsulinaCarbohidratosDiv10 != null) {
         ratios.add(log.ratioInsulinaCarbohidratosDiv10!);
       }
     }
@@ -247,8 +228,6 @@ class DiabetesCalculatorService {
     return average;
   }
 
-  // NUEVO: Obtener el promedio de 'period_pX_avg_index' (que es el avg(ratio_final) de DailyCalculationData)
-  // para un período específico durante los últimos 'days' días.
   Future<double?> getAverageOfDailyPeriodAvgRatioFinal(
       {required DayPeriod period, int days = 7, DateTime? endDate}) async {
     endDate ??= DateTime.now();
@@ -271,8 +250,6 @@ class DiabetesCalculatorService {
     return average;
   }
 
-  // NUEVO: Obtener el promedio de 'dailyCorrectionIndex' de los últimos 'days' días.
-  // (Este método ya existía como getAverageWeeklyCorrectionIndex, lo hacemos más genérico)
   Future<double?> getAverageDailyCorrectionIndex({int days = 7, DateTime? endDate}) async {
     endDate ??= DateTime.now();
     List<double> dailyIndices = [];
@@ -284,8 +261,7 @@ class DiabetesCalculatorService {
       if (dailyData?.dailyCorrectionIndex != null) {
         dailyIndices.add(dailyData!.dailyCorrectionIndex!);
       } else {
-        // Si no está precalculado, lo calculamos al vuelo para el promedio
-        final calculatedOnFly = _calculateDailyInsulinAndCorrectionIndex(date);
+        final calculatedOnFly = await _calculateDailyInsulinAndCorrectionIndex(date);
         if (calculatedOnFly['dailyCorrectionIndex'] != null) {
           dailyIndices.add(calculatedOnFly['dailyCorrectionIndex']!);
         }

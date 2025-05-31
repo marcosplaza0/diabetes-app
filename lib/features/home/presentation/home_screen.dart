@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart'; // Necesario para ValueListenab
 import 'package:intl/intl.dart'; // Para formatear fechas y horas
 import 'package:collection/collection.dart'; // Para .sortedBy y .lastOrNull
 
+
 import 'package:diabetes_2/features/home/widgets/recent_logs_widget.dart';
 import 'package:diabetes_2/features/home/widgets/current_insulin_needs_widget.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart'; // Para MealLog
@@ -163,7 +164,7 @@ class LastGlucoseReadingWidget extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        latestTime != null ? "${latestType} - ${DateFormat('HH:mm', 'es_ES').format(latestTime!)}" : "Sin registros recientes",
+                        latestTime != null ? "${latestType} - ${DateFormat('HH:mm', 'es_ES').format(latestTime)}" : "Sin registros recientes",
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],

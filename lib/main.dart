@@ -14,10 +14,19 @@ import 'package:diabetes_2/data/models/profile/user_profile_data.dart';
 import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart';
 import 'package:diabetes_2/core/services/image_cache_service.dart';
 import 'package:provider/provider.dart';
+import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Importa el servicio
+
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/theme/theme_provider.dart';
+
+
+import 'package:diabetes_2/data/repositories/log_repository.dart';
+import 'package:diabetes_2/data/repositories/log_repository_impl.dart';
+import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 const String mealLogBoxName = 'meal_logs';
 const String overnightLogBoxName = 'overnight_logs';
@@ -34,8 +43,8 @@ Future<void> main() async {
   Hive.registerAdapter(UserProfileDataAdapter());
   Hive.registerAdapter(DailyCalculationDataAdapter());
 
-  await Hive.openBox<MealLog>(mealLogBoxName);
-  await Hive.openBox<OvernightLog>(overnightLogBoxName);
+  final mealLogBox = await Hive.openBox<MealLog>(mealLogBoxName);
+  final overnightLogBox = await Hive.openBox<OvernightLog>(overnightLogBoxName);
   await Hive.openBox<UserProfileData>(userProfileBoxName);
   await Hive.openBox<DailyCalculationData>(dailyCalculationsBoxName);
 
@@ -43,16 +52,38 @@ Future<void> main() async {
   final imageCacheService = ImageCacheService();
   await imageCacheService.init();
 
+  // Inicializar SharedPreferences
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   await Supabase.initialize(
     anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwanRkZHl5YnhybHhmamhzd256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyOTQwMDAsImV4cCI6MjA2Mzg3MDAwMH0.ABU_Vfh6h9C8iF1MSxAdTyJXX7LufSpQWX58opMKYQ0",
     url: "https://fpjtddyybxrlxfjhswnz.supabase.co",
   );
+
+  // Inicializar SupabaseLogSyncService (si no es un singleton que se auto-inicialice)
+  final supabaseLogSyncService = SupabaseLogSyncService();
+
+  // Crear la instancia de LogRepository que DiabetesCalculatorService necesitará
+  final logRepository = LogRepositoryImpl(
+    mealLogBox: mealLogBox,
+    overnightLogBox: overnightLogBox,
+    supabaseLogSyncService: supabaseLogSyncService,
+    sharedPreferences: sharedPreferences,
+  );
+
+  // Crear la instancia de DiabetesCalculatorService, pasándole el logRepository
+  final diabetesCalculatorService = DiabetesCalculatorService(logRepository: logRepository);
+
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => themeProvider),
         Provider<ImageCacheService>(create: (_) => imageCacheService),
+        Provider<SharedPreferences>(create: (_) => sharedPreferences), // Proveer SharedPreferences
+        Provider<SupabaseLogSyncService>(create: (_) => supabaseLogSyncService), // Proveer el servicio de sync
+        Provider<LogRepository>(create: (_) => logRepository),
+        Provider<DiabetesCalculatorService>(create: (_) => diabetesCalculatorService),
       ],
       child: const DiabetesApp(),
     )

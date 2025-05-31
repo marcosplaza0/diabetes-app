@@ -1,11 +1,13 @@
 // lib/features/home/widgets/recent_logs_widget.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Para ValueListenableBuilder y Box
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart'; // Para Provider
 
 import 'package:diabetes_2/data/models/logs/logs.dart';
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName;
+import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Para nombres de cajas (listeners)
+import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importar el repositorio
 
 class RecentLogsWidget extends StatefulWidget {
   const RecentLogsWidget({super.key});
@@ -16,12 +18,17 @@ class RecentLogsWidget extends StatefulWidget {
 
 class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   List<Map<String, dynamic>> _sortedRecentLogs = [];
+  late LogRepository _logRepository;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _logRepository = Provider.of<LogRepository>(context, listen: false);
     _loadRecentLogs();
     // Escuchar cambios en las cajas de Hive para actualizar la UI
+    // El repositorio podría eventualmente ofrecer su propio stream/notifier,
+    // pero por ahora, escuchar las cajas directamente y recargar desde el repo es una solución.
     Hive.box<MealLog>(mealLogBoxName).listenable().addListener(_loadRecentLogs);
     Hive.box<OvernightLog>(overnightLogBoxName).listenable().addListener(_loadRecentLogs);
   }
@@ -34,31 +41,17 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   }
 
   Future<void> _loadRecentLogs() async {
-    final now = DateTime.now();
-    final twentyFourHoursAgo = now.subtract(const Duration(hours: 24));
-    List<Map<String, dynamic>> combinedLogs = [];
-
-    final mealLogBox = Hive.box<MealLog>(mealLogBoxName);
-    for (var log in mealLogBox.values) {
-      if (log.startTime.isAfter(twentyFourHoursAgo)) {
-        // log.key ahora será el String UUID si se guardó con .put(uuid, log)
-        combinedLogs.add({'time': log.startTime, 'log': log, 'type': 'meal', 'key': log.key});
-      }
+    if (!mounted) return;
+    setState(() { _isLoading = true; });
+    try {
+      _sortedRecentLogs = await _logRepository.getRecentLogs(const Duration(hours: 24));
+    } catch (e) {
+      debugPrint("Error cargando logs recientes desde el repositorio: $e");
+      // Manejar el error como sea apropiado, quizás mostrar un mensaje
     }
-
-    final overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName);
-    for (var log in overnightLogBox.values) {
-      if (log.bedTime.isAfter(twentyFourHoursAgo)) {
-        // log.key ahora será el String UUID
-        combinedLogs.add({'time': log.bedTime, 'log': log, 'type': 'overnight', 'key': log.key});
-      }
-    }
-
-    combinedLogs.sort((a, b) => (a['time'] as DateTime).compareTo(b['time'] as DateTime));
-
     if (mounted) {
       setState(() {
-        _sortedRecentLogs = combinedLogs;
+        _isLoading = false;
       });
     }
   }
@@ -66,8 +59,8 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   void _showLogDetails(BuildContext passedContext, dynamic logData) {
     final log = logData['log'];
     final String type = logData['type'];
-    final dynamic logKeyFromMap = logData['key']; // Esta es la clave de Hive (UUID String)
-    final DateFormat timeFormat = DateFormat.Hm(); // Usar localización si es necesario
+    final dynamic logKeyFromMap = logData['key'];
+    final DateFormat timeFormat = DateFormat.Hm();
     final theme = Theme.of(passedContext);
 
     showModalBottomSheet(
@@ -109,10 +102,9 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
                   icon: Icon(Icons.edit_rounded, color: bottomSheetTheme.colorScheme.primary),
                   tooltip: 'Editar registro',
                   onPressed: () {
-                    Navigator.pop(bContext); // Cerrar el bottom sheet primero
+                    Navigator.pop(bContext);
 
                     if (logKeyFromMap != null) {
-                      // logKeyFromMap ya es el String UUID
                       final String logKeyString = logKeyFromMap.toString();
                       final String logTypeString = type;
 
@@ -120,7 +112,7 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
                         'diabetesLogEdit',
                         pathParameters: {
                           'logTypeString': logTypeString,
-                          'logKeyString': logKeyString, // Se pasa el UUID String
+                          'logKeyString': logKeyString,
                         },
                       );
                     } else {
@@ -145,6 +137,10 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    if (_isLoading) {
+      return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(strokeWidth: 2)));
+    }
+
     if (_sortedRecentLogs.isEmpty) {
       return Center(
         child: Padding(
@@ -159,35 +155,33 @@ class _RecentLogsWidgetState extends State<RecentLogsWidget> {
     }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Espacio a los lados del Row
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         children: _sortedRecentLogs.map((logData) {
           final String type = logData['type'];
           final DateTime time = logData['time'];
           IconData iconData = type == 'meal' ? Icons.fastfood_rounded : Icons.bedtime_rounded;
-          // Usar un color de contenedor del tema para el fondo del icono
           Color iconBackgroundColor = type == 'meal' ? theme.colorScheme.primaryContainer : theme.colorScheme.secondaryContainer;
           Color onIconBackgroundColor = type == 'meal' ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSecondaryContainer;
 
-
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0), // Espacio entre iconos
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: iconBackgroundColor.withAlpha(90), // Un poco de transparencia
+                    color: iconBackgroundColor.withAlpha(90),
                     shape: BoxShape.circle,
                   ),
-                  child: IconButton( // Usar IconButton para mejor accesibilidad y feedback táctil
-                    icon: Icon(iconData, size: 22), // Tamaño de icono ajustado
-                    color: onIconBackgroundColor, // Color del icono
+                  child: IconButton(
+                    icon: Icon(iconData, size: 22),
+                    color: onIconBackgroundColor,
                     tooltip: '${type == 'meal' ? 'Comida' : 'Noche'} - ${DateFormat.Hm().format(time)}',
                     onPressed: () => _showLogDetails(context, logData),
-                    iconSize: 20, // Tamaño del área de toque
-                    padding: const EdgeInsets.all(10), // Padding dentro del IconButton
-                    constraints: const BoxConstraints(), // Para eliminar constraints adicionales si es necesario
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(10),
+                    constraints: const BoxConstraints(),
                   ),
                 ),
                 const SizedBox(height: 4),

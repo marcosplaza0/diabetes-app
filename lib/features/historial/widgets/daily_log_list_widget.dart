@@ -1,11 +1,13 @@
 // lib/features/historial/widgets/daily_log_list_widget.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Para ValueListenableBuilder y Box
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart'; // Para Provider
 
 import 'package:diabetes_2/data/models/logs/logs.dart';
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName;
+import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Para nombres de cajas (listeners)
+import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importar el repositorio
 
 class DailyLogListWidget extends StatefulWidget {
   final DateTime selectedDate;
@@ -20,45 +22,31 @@ class DailyLogListWidget extends StatefulWidget {
 }
 
 class _DailyLogListWidgetState extends State<DailyLogListWidget> {
-  late Box<MealLog> _mealLogBox;
-  late Box<OvernightLog> _overnightLogBox;
+  late LogRepository _logRepository;
+  // Las cajas de Hive pueden mantenerse para los ValueListenableBuilder si el repo no es un Listenable.
+  // Opcionalmente, el repositorio mismo podría ser un Listenable.
+  late Box<MealLog> _mealLogBoxListener;
+  late Box<OvernightLog> _overnightLogBoxListener;
+
 
   @override
   void initState() {
     super.initState();
-    _mealLogBox = Hive.box<MealLog>(mealLogBoxName); //
-    _overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName); //
+    _logRepository = Provider.of<LogRepository>(context, listen: false);
+    _mealLogBoxListener = Hive.box<MealLog>(mealLogBoxName);
+    _overnightLogBoxListener = Hive.box<OvernightLog>(overnightLogBoxName);
   }
 
-  List<dynamic> _getFilteredAndSortedLogs() {
-    List<dynamic> dailyLogs = [];
-
-    for (var mealLog in _mealLogBox.values) {
-      if (DateUtils.isSameDay(mealLog.startTime, widget.selectedDate)) {
-        dailyLogs.add(mealLog);
-      }
-    }
-
-    for (var overnightLog in _overnightLogBox.values) {
-      if (DateUtils.isSameDay(overnightLog.bedTime, widget.selectedDate)) {
-        dailyLogs.add(overnightLog);
-      }
-    }
-
-    dailyLogs.sort((a, b) {
-      DateTime timeA = a is MealLog ? a.startTime : (a as OvernightLog).bedTime;
-      DateTime timeB = b is MealLog ? b.startTime : (b as OvernightLog).bedTime;
-      return timeA.compareTo(timeB);
-    });
-
-    return dailyLogs;
+  // Este método ahora será asíncrono ya que el repositorio devuelve Futures
+  Future<List<dynamic>> _getFilteredAndSortedLogs() async {
+    return await _logRepository.getFilteredAndSortedLogsForDate(widget.selectedDate);
   }
 
   Color _getGlucoseColor(double? bG, ThemeData theme) {
     if (bG == null) return theme.colorScheme.onSurfaceVariant.withOpacity(0.7);
-    if (bG < 70) return theme.colorScheme.error; // Hypo
-    if (bG > 180) return Colors.red.shade700; // Hyper - Strong Red
-    return Colors.green.shade600; // In range
+    if (bG < 70) return theme.colorScheme.error;
+    if (bG > 180) return Colors.red.shade700;
+    return Colors.green.shade600;
   }
 
   Widget _buildDetailItem(BuildContext context, IconData icon, String label, String value, {Color? valueColor, Color? iconColor}) {
@@ -103,22 +91,21 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
     );
   }
 
-
   Widget _buildMealLogTile(MealLog log, ThemeData theme) {
-    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode); //
+    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode);
 
     return Card(
       elevation: 2.0,
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)), // Enhanced radius
-      color: theme.colorScheme.surfaceContainer, // M3 Surface color
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      color: theme.colorScheme.surfaceContainer,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           if (log.key != null) {
             final String logKeyString = log.key.toString();
-            context.pushNamed( //
-              'diabetesLogEdit', //
+            context.pushNamed(
+              'diabetesLogEdit',
               pathParameters: {
                 'logTypeString': 'meal',
                 'logKeyString': logKeyString,
@@ -140,7 +127,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                 children: [
                   CircleAvatar(
                     backgroundColor: theme.colorScheme.primaryContainer,
-                    radius: 22, // Slightly larger
+                    radius: 22,
                     child: Icon(Icons.restaurant_menu_rounded, color: theme.colorScheme.onPrimaryContainer, size: 22),
                   ),
                   const SizedBox(width: 12.0),
@@ -169,7 +156,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
   }
 
   Widget _buildOvernightLogTile(OvernightLog log, ThemeData theme) {
-    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode); //
+    final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode);
     return Card(
       elevation: 2.0,
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
@@ -180,8 +167,8 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
         onTap: () {
           if (log.key != null) {
             final String logKeyString = log.key.toString();
-            context.pushNamed( //
-              'diabetesLogEdit', //
+            context.pushNamed(
+              'diabetesLogEdit',
               pathParameters: {
                 'logTypeString': 'overnight',
                 'logKeyString': logKeyString,
@@ -233,57 +220,70 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Usamos ValueListenableBuilder para reaccionar a cambios en las cajas de Hive.
+    // Cuando cambian, el FutureBuilder se reconstruirá y llamará a _getFilteredAndSortedLogs.
     return ValueListenableBuilder<Box<MealLog>>(
-      valueListenable: _mealLogBox.listenable(),
-      builder: (context, mealBox, _) {
+      valueListenable: _mealLogBoxListener.listenable(),
+      builder: (context, _, __) { // No necesitamos mealBox directamente aquí
         return ValueListenableBuilder<Box<OvernightLog>>(
-          valueListenable: _overnightLogBox.listenable(),
-          builder: (context, overnightBox, _) {
-            final List<dynamic> logsToShow = _getFilteredAndSortedLogs();
-
-            if (logsToShow.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0), // More padding
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.forum_outlined, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)), // Changed icon
-                      const SizedBox(height: 20),
-                      Text(
-                        'No hay registros para el', // Changed text
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8)),
-                      ),
-                      Text(
-                        DateFormat('EEEE dd MMMM', 'es_ES').format(widget.selectedDate), // Format date more nicely
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Puedes añadir nuevas notas desde la pantalla de inicio o usando el botón '+' en algunas pantallas.", // Updated guidance
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Added scroll physics
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-              itemCount: logsToShow.length,
-              itemBuilder: (context, index) {
-                final log = logsToShow[index];
-                if (log is MealLog) {
-                  return _buildMealLogTile(log, theme);
-                } else if (log is OvernightLog) {
-                  return _buildOvernightLogTile(log, theme);
+          valueListenable: _overnightLogBoxListener.listenable(),
+          builder: (context, ___, ____) { // No necesitamos overnightBox directamente aquí
+            // FutureBuilder para manejar el estado de carga de los logs desde el repositorio
+            return FutureBuilder<List<dynamic>>(
+              future: _getFilteredAndSortedLogs(), // Llama al método asíncrono
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-                return const SizedBox.shrink();
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error cargando logs: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.forum_outlined, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                          const SizedBox(height: 20),
+                          Text(
+                            'No hay registros para el',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8)),
+                          ),
+                          Text(
+                            DateFormat('EEEE dd MMMM', 'es_ES').format(widget.selectedDate),
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Puedes añadir nuevas notas desde la pantalla de inicio o usando el botón '+' en algunas pantallas.",
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final List<dynamic> logsToShow = snapshot.data!;
+                return ListView.builder(
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  itemCount: logsToShow.length,
+                  itemBuilder: (context, index) {
+                    final log = logsToShow[index];
+                    if (log is MealLog) {
+                      return _buildMealLogTile(log, theme);
+                    } else if (log is OvernightLog) {
+                      return _buildOvernightLogTile(log, theme);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                );
               },
             );
           },

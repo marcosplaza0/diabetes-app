@@ -4,20 +4,21 @@ import 'package:flutter/services.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
-import 'package:diabetes_2/main.dart' show supabase, dailyCalculationsBoxName; // Importar dailyCalculationsBoxName
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Importar DailyCalculationData
-
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:diabetes_2/main.dart' show supabase, dailyCalculationsBoxName;
+import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart';
 import 'package:diabetes_2/core/services/diabetes_calculator_service.dart';
+import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importa el repositorio
+import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Para sincronizar DailyCalculationData
+import 'package:shared_preferences/shared_preferences.dart'; // Para verificar cloudSaveEnabled
 
 // Nombres de las cajas de Hive y clave de SharedPreferences
-const String mealLogBoxNameFromScreen = 'meal_logs';
-const String overnightLogBoxNameFromScreen = 'overnight_logs';
-const String cloudSavePreferenceKeyFromLogScreen = 'saveToCloudEnabled';
+// (Estas constantes podrían moverse a un archivo central si se usan en muchos lugares)
+// const String mealLogBoxNameFromScreen = 'meal_logs'; // Ya no es necesario aquí
+// const String overnightLogBoxNameFromScreen = 'overnight_logs'; // Ya no es necesario aquí
+const String cloudSavePreferenceKeyFromLogScreen = 'saveToCloudEnabled'; // Usado para DailyCalcData sync
 
 enum LogType { meal, overnight }
 
@@ -63,22 +64,32 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
   final _slowInsulinController = TextEditingController();
   final _afterWakeUpBloodSugarController = TextEditingController();
 
-  late Box<MealLog> _mealLogBox;
-  late Box<OvernightLog> _overnightLogBox;
-  late Box<DailyCalculationData> _dailyCalculationsBox; // Caja para los cálculos diarios
+  late Box<DailyCalculationData> _dailyCalculationsBox;
+  late LogRepository _logRepository;
+  late SupabaseLogSyncService _supabaseLogSyncService; // Para DailyCalculationData sync
 
-  final SupabaseLogSyncService _logSyncService = SupabaseLogSyncService();
   final Uuid _uuid = const Uuid();
-
-  final DiabetesCalculatorService _calculatorService = DiabetesCalculatorService();
+  // DiabetesCalculatorService se instanciará donde se necesite, o se puede proveer si es más complejo.
+  // Por ahora, lo instanciamos directamente. Si se refactoriza para no depender de cajas, mejor.
+  // De hecho, DiabetesCalculatorService SÍ necesitará ser refactorizado para usar LogRepository.
+  // Para este ejemplo, asumiremos que aún no lo está, pero lo ideal es que SÍ lo esté.
+  // Si DiabetesCalculatorService es refactorizado, podría ser inyectado también.
+  late DiabetesCalculatorService _calculatorService;
 
 
   @override
   void initState() {
     super.initState();
-    _mealLogBox = Hive.box<MealLog>(mealLogBoxNameFromScreen);
-    _overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxNameFromScreen);
-    _dailyCalculationsBox = Hive.box<DailyCalculationData>(dailyCalculationsBoxName); // Inicializar la nueva caja
+    _logRepository = Provider.of<LogRepository>(context, listen: false);
+    _supabaseLogSyncService = Provider.of<SupabaseLogSyncService>(context, listen: false);
+    _dailyCalculationsBox = Hive.box<DailyCalculationData>(dailyCalculationsBoxName);
+
+    // Idealmente, DiabetesCalculatorService también se obtendría de Provider si se refactoriza
+    // para no depender directamente de las cajas de Hive.
+    // Si DiabetesCalculatorService se refactoriza, se le pasaría _logRepository.
+    _calculatorService = Provider.of<DiabetesCalculatorService>(context, listen: false);
+    // Si YA USA repo: _calculatorService = DiabetesCalculatorService(logRepository: _logRepository);
+
 
     if (widget.logKey != null && widget.logTypeString != null) {
       _isEditMode = true;
@@ -88,7 +99,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       final now = DateTime.now();
       _selectedLogDate = DateTime(now.year, now.month, now.day);
       _selectedMealStartTime = TimeOfDay.fromDateTime(now);
-      _currentLogType = LogType.meal;
+      _currentLogType = LogType.meal; // Valor por defecto
     }
   }
 
@@ -104,14 +115,14 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     super.dispose();
   }
 
-  void _loadLogForEditing() {
+  Future<void> _loadLogForEditing() async {
     if (!_isEditMode || widget.logKey == null) return;
 
     dynamic logToEdit;
     if (_currentLogType == LogType.meal) {
-      logToEdit = _mealLogBox.get(widget.logKey!);
+      logToEdit = await _logRepository.getMealLog(widget.logKey!);
     } else {
-      logToEdit = _overnightLogBox.get(widget.logKey!);
+      logToEdit = await _logRepository.getOvernightLog(widget.logKey!);
     }
 
     if (logToEdit == null) {
@@ -135,7 +146,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         _carbohydratesController.text = mealLog.carbohydrates.toStringAsFixed(0);
         _fastInsulinController.text = mealLog.insulinUnits.toStringAsFixed(1);
         _finalBloodSugarController.text = mealLog.finalBloodSugar?.toStringAsFixed(0) ?? '';
-        // No cargamos indiceFinal aquí para editar, ya que se recalculará al guardar.
       });
     } else if (logToEdit is OvernightLog) {
       final overnightLog = logToEdit;
@@ -154,7 +164,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       context: context,
       initialDate: _selectedLogDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime(2101), // O DateTime.now() si no se permiten fechas futuras
     );
     if (picked != null && picked != _selectedLogDate) {
       setState(() {
@@ -406,12 +416,12 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     _afterWakeUpBloodSugarController.clear();
     if (!_isEditMode) {
       setState(() {
-        _selectedBedTime = TimeOfDay.now();
+        _selectedBedTime = TimeOfDay.now(); // O la hora por defecto que prefieras
       });
     }
   }
 
-  void _saveMealLog() async {
+  Future<void> _saveMealLog() async {
     if (!(_mealFormKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, corrige los errores en el formulario.'), backgroundColor: Colors.orange),
@@ -438,79 +448,71 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
         : null;
     DateTime? mealEventEndTime;
     if (finalBloodSugar != null && _finalBloodSugarController.text.isNotEmpty) {
-      mealEventEndTime = mealEventStartTime.add(const Duration(hours: 3));
+      mealEventEndTime = mealEventStartTime.add(const Duration(hours: 3)); // Asumiendo 3 horas después
     }
 
-    // Crear el objeto MealLog inicial (sin indiceFinal, ya que se calculará después)
-    MealLog mealLog = MealLog( // <- Hacerlo no final para poder reasignar después de obtener de Hive
+    MealLog mealLog = MealLog(
       startTime: mealEventStartTime,
       initialBloodSugar: initialBloodSugar,
       carbohydrates: carbohydrates,
       insulinUnits: fastInsulin,
       finalBloodSugar: finalBloodSugar,
       endTime: mealEventEndTime,
-      // indiceFinal se deja null aquí; se calculará y actualizará por el servicio
+      // Campos calculados como ratioFinal se actualizarán por DiabetesCalculatorService
     );
 
     try {
       String message;
-      String currentHiveKey;
+      String currentHiveKey = _isEditMode ? widget.logKey! : _uuid.v4();
 
-      if (_isEditMode) {
-        currentHiveKey = widget.logKey!;
-        await _mealLogBox.put(currentHiveKey, mealLog);
-        message = 'Nota de comida actualizada en Hive';
-      } else {
-        currentHiveKey = _uuid.v4();
-        await _mealLogBox.put(currentHiveKey, mealLog);
-        message = 'Nota de comida guardada en Hive';
-      }
-      debugPrint('$message (pre-cálculos): $mealLog con clave de Hive (UUID): $currentHiveKey');
+      // 1. Guardar/Actualizar el log inicial en Hive y (si está activado) en Supabase via Repositorio
+      await _logRepository.saveMealLog(mealLog, currentHiveKey);
+      message = _isEditMode ? 'Nota de comida actualizada' : 'Nota de comida guardada';
+      debugPrint('$message localmente y (si aplica) sincronización inicial disparada por repo (clave: $currentHiveKey)');
 
-      // Obtener la fecha normalizada del log para los cálculos
+      // 2. Actualizar cálculos diarios (esto actualizará el MealLog en Hive con los campos calculados
+      // y también actualizará/creará DailyCalculationData).
+      // Si DiabetesCalculatorService es refactorizado para usar LogRepository, pasarlo aquí.
       final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
-
-      // 1. Actualizar cálculos (esto actualizará el MealLog en Hive con indiceFinal y también DailyCalculationData)
       try {
+        // Asumiendo que _calculatorService ha sido refactorizado o usa una instancia global de LogRepository
+        // Si no, necesitaría acceso a las cajas o al repositorio.
+        // Para este ejemplo, si _calculatorService no está refactorizado, funcionará porque
+        // el log ya está en Hive. Si SÍ está refactorizado, necesitará _logRepository.
         await _calculatorService.updateCalculationsForDay(dateOfLog);
-        debugPrint("Cálculos actualizados para el día del MealLog: $dateOfLog");
+        debugPrint("Cálculos actualizados para el día del MealLog: $dateOfLog. MealLog en Hive debería estar actualizado.");
+
+        // 3. Sincronizar DailyCalculationData con Supabase si la nube está activada.
+        // El MealLog ya se habrá re-sincronizado por el repositorio si DiabetesCalculatorService lo guarda usando el repo.
+        final prefs = await SharedPreferences.getInstance();
+        final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
+        final bool isLoggedIn = supabase.auth.currentUser != null;
+
+        if (cloudSaveEnabled && isLoggedIn) {
+          final dailyCalcKey = DateFormat('yyyy-MM-dd').format(dateOfLog);
+          final DailyCalculationData? dailyCalcData = _dailyCalculationsBox.get(dailyCalcKey);
+          if (dailyCalcData != null) {
+            await _supabaseLogSyncService.syncDailyCalculation(dailyCalcData);
+            message += ' y cálculos diarios sincronizados.';
+            debugPrint("DailyCalculationData para $dailyCalcKey sincronizado a Supabase post-cálculo.");
+          } else {
+            message += ', pero no se encontró DailyCalculationData para sincronizar.';
+            debugPrint("ADVERTENCIA: No se encontró DailyCalculationData para $dailyCalcKey para sincronizar.");
+          }
+          // Aquí, si _calculatorService NO usa el repositorio para guardar el MealLog actualizado,
+          // necesitarías volver a obtener el MealLog de Hive y sincronizarlo explícitamente.
+          // PERO, es mejor que _calculatorService use el LogRepository.
+        } else if (cloudSaveEnabled && !isLoggedIn) {
+          message += ', pero no se pudo sincronizar (no has iniciado sesión).';
+        }
+
       } catch (e) {
-        debugPrint("Error actualizando cálculos para $dateOfLog: $e");
+        debugPrint("Error actualizando cálculos para $dateOfLog o sincronizando DailyCalcData: $e");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error actualizando estadísticas diarias: ${e.toString()}'), backgroundColor: Colors.amber.shade800),
           );
         }
-      }
-
-      // 2. Sincronización con Supabase si está activado
-      final prefs = await SharedPreferences.getInstance();
-      final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
-      final bool isLoggedIn = supabase.auth.currentUser != null;
-
-      if (cloudSaveEnabled && isLoggedIn) {
-        // Obtener el MealLog ACTUALIZADO de Hive (que ahora debería tener indiceFinal)
-        final MealLog? updatedMealLogFromHive = _mealLogBox.get(currentHiveKey);
-        if (updatedMealLogFromHive != null) {
-          await _logSyncService.syncMealLog(updatedMealLogFromHive, currentHiveKey);
-          message += ' y sincronizada con la nube (con cálculos).';
-
-          // También sincronizar DailyCalculationData para este día
-          final dailyCalcKey = DateFormat('yyyy-MM-dd').format(dateOfLog);
-          final DailyCalculationData? dailyCalcData = _dailyCalculationsBox.get(dailyCalcKey);
-          if (dailyCalcData != null) {
-            await _logSyncService.syncDailyCalculation(dailyCalcData);
-            debugPrint("DailyCalculationData para $dailyCalcKey sincronizado a Supabase.");
-          } else {
-            debugPrint("ADVERTENCIA: No se encontró DailyCalculationData para $dailyCalcKey para sincronizar.");
-          }
-
-        } else {
-          message += ', error al obtener log actualizado de Hive para sincronizar.';
-          debugPrint("ERROR: MealLog no encontrado en Hive con la clave $currentHiveKey después de actualizar cálculos.");
-        }
-      } else if (cloudSaveEnabled && !isLoggedIn) {
-        message += ', pero no se pudo sincronizar (no has iniciado sesión).';
       }
 
       if (!mounted) return;
@@ -519,13 +521,13 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       if (Navigator.canPop(context)) Navigator.pop(context);
 
     } catch (e) {
-      debugPrint('Error al guardar/actualizar MealLog y sus cálculos/sincronización: $e');
+      debugPrint('Error al guardar/actualizar MealLog (paso principal): $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar/actualizar: ${e.toString()}'), backgroundColor: Colors.red));
     }
   }
 
-  void _saveOvernightLog() async {
+  Future<void> _saveOvernightLog() async {
     if (!(_overnightFormKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, corrige los errores en el formulario.'), backgroundColor: Colors.orange),
@@ -559,38 +561,15 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
     try {
       String message;
-      String currentHiveKey;
+      String currentHiveKey = _isEditMode ? widget.logKey! : _uuid.v4();
 
-      if (_isEditMode) {
-        currentHiveKey = widget.logKey!;
-        await _overnightLogBox.put(currentHiveKey, overnightLog);
-        message = 'Nota de noche actualizada en Hive';
-      } else {
-        currentHiveKey = _uuid.v4();
-        await _overnightLogBox.put(currentHiveKey, overnightLog);
-        message = 'Nota de noche guardada en Hive';
-      }
-      debugPrint('$message: $overnightLog con clave de Hive (UUID): $currentHiveKey');
+      await _logRepository.saveOvernightLog(overnightLog, currentHiveKey);
+      message = _isEditMode ? 'Nota de noche actualizada' : 'Nota de noche guardada';
+      // La sincronización con Supabase (si está activada) ocurre dentro de saveOvernightLog del repositorio.
+      debugPrint('$message localmente y (si aplica) sincronización disparada por repo (clave: $currentHiveKey)');
 
-      final prefs = await SharedPreferences.getInstance();
-      final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
-      final bool isLoggedIn = supabase.auth.currentUser != null;
-
-      if (cloudSaveEnabled && isLoggedIn) {
-        await _logSyncService.syncOvernightLog(overnightLog, currentHiveKey);
-        message += ' y sincronizada con la nube.';
-        debugPrint("OvernightLog sincronizado a Supabase con clave de Hive (UUID) $currentHiveKey.");
-      } else if (cloudSaveEnabled && !isLoggedIn) {
-        message += ', pero no se pudo sincronizar (no has iniciado sesión).';
-        debugPrint("OvernightLog NO sincronizado: Usuario no logueado.");
-      }
-
-      // Actualmente, los OvernightLogs no disparan recálculos con DiabetesCalculatorService.
-      // Si en el futuro necesitas que actualicen DailyCalculationData (ej. si OvernightLog
-      // influyera en totalMealInsulin, lo cual no parece el caso), aquí llamarías a:
-      // final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
-      // await _calculatorService.updateCalculationsForDay(dateOfLog);
-      // Y luego sincronizarías el DailyCalculationData si cloudSaveEnabled es true.
+      // OvernightLogs actualmente no desencadenan recálculos de DailyCalculationData
+      // ni necesitan ser re-sincronizados con campos calculados.
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
@@ -606,7 +585,7 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final DateFormat dateFormat = DateFormat.yMMMMd(Localizations.localeOf(context).languageCode);
+    final DateFormat dateFormat = DateFormat.yMMMMd(Localizations.localeOf(context).languageCode); // 'es_ES'
     final String appBarTitle = _isEditMode ? 'Editar Registro' : 'Nuevo Registro de Diabetes';
 
     return Scaffold(
@@ -630,10 +609,8 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
               ),
             ),
             const Divider(height: kVerticalSpacerLarge),
-
             _buildLogTypeSelector(),
             const SizedBox(height: kVerticalSpacerMedium),
-
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
