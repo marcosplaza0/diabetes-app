@@ -114,17 +114,6 @@ class TrendsScreen extends StatelessWidget {
             )),
           ],
         ),
-        const SizedBox(height: 16),
-        // Tarjeta para el Índice de Corrección Promedio (si está disponible).
-        if (viewModel.summaryData!.averageDailyCorrectionIndex != null)
-          SummaryStatCard(
-            title: "Índice Corrección Prom.",
-            value: viewModel.summaryData!.averageDailyCorrectionIndex!.toStringAsFixed(1),
-            icon: Icons.settings_ethernet_rounded,
-            cardBackgroundColor: theme.colorScheme.tertiaryContainer,
-            onCardColor: theme.colorScheme.onTertiaryContainer,
-            isWide: true, // Para que ocupe todo el ancho.
-          ),
       ],
     );
   }
