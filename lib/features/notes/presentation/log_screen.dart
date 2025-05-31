@@ -470,41 +470,11 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       message = _isEditMode ? 'Nota de comida actualizada' : 'Nota de comida guardada';
       debugPrint('$message localmente y (si aplica) sincronización inicial disparada por repo (clave: $currentHiveKey)');
 
-      // 2. Actualizar cálculos diarios (esto actualizará el MealLog en Hive con los campos calculados
-      // y también actualizará/creará DailyCalculationData).
-      // Si DiabetesCalculatorService es refactorizado para usar LogRepository, pasarlo aquí.
       final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
       try {
-        // Asumiendo que _calculatorService ha sido refactorizado o usa una instancia global de LogRepository
-        // Si no, necesitaría acceso a las cajas o al repositorio.
-        // Para este ejemplo, si _calculatorService no está refactorizado, funcionará porque
-        // el log ya está en Hive. Si SÍ está refactorizado, necesitará _logRepository.
         await _calculatorService.updateCalculationsForDay(dateOfLog);
-        debugPrint("Cálculos actualizados para el día del MealLog: $dateOfLog. MealLog en Hive debería estar actualizado.");
-
-        // 3. Sincronizar DailyCalculationData con Supabase si la nube está activada.
-        // El MealLog ya se habrá re-sincronizado por el repositorio si DiabetesCalculatorService lo guarda usando el repo.
-        final prefs = await SharedPreferences.getInstance();
-        final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogScreen) ?? false;
-        final bool isLoggedIn = supabase.auth.currentUser != null;
-
-        if (cloudSaveEnabled && isLoggedIn) {
-          final dailyCalcKey = DateFormat('yyyy-MM-dd').format(dateOfLog);
-          final DailyCalculationData? dailyCalcData = _dailyCalculationsBox.get(dailyCalcKey);
-          if (dailyCalcData != null) {
-            await _supabaseLogSyncService.syncDailyCalculation(dailyCalcData);
-            message += ' y cálculos diarios sincronizados.';
-            debugPrint("DailyCalculationData para $dailyCalcKey sincronizado a Supabase post-cálculo.");
-          } else {
-            message += ', pero no se encontró DailyCalculationData para sincronizar.';
-            debugPrint("ADVERTENCIA: No se encontró DailyCalculationData para $dailyCalcKey para sincronizar.");
-          }
-          // Aquí, si _calculatorService NO usa el repositorio para guardar el MealLog actualizado,
-          // necesitarías volver a obtener el MealLog de Hive y sincronizarlo explícitamente.
-          // PERO, es mejor que _calculatorService use el LogRepository.
-        } else if (cloudSaveEnabled && !isLoggedIn) {
-          message += ', pero no se pudo sincronizar (no has iniciado sesión).';
-        }
+        debugPrint("Cálculos actualizados para el día del MealLog: $dateOfLog. DailyCalcData también debería estar guardado/sincronizado.");
+        message += ' y cálculos diarios procesados.';
 
       } catch (e) {
         debugPrint("Error actualizando cálculos para $dateOfLog o sincronizando DailyCalcData: $e");
@@ -568,8 +538,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
       // La sincronización con Supabase (si está activada) ocurre dentro de saveOvernightLog del repositorio.
       debugPrint('$message localmente y (si aplica) sincronización disparada por repo (clave: $currentHiveKey)');
 
-      // OvernightLogs actualmente no desencadenan recálculos de DailyCalculationData
-      // ni necesitan ser re-sincronizados con campos calculados.
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));

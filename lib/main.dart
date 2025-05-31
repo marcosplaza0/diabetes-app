@@ -24,6 +24,10 @@ import 'core/theme/theme_provider.dart';
 
 import 'package:diabetes_2/data/repositories/log_repository.dart';
 import 'package:diabetes_2/data/repositories/log_repository_impl.dart';
+import 'package:diabetes_2/data/repositories/calculation_data_repository.dart';
+import 'package:diabetes_2/data/repositories/calculation_data_repository_impl.dart';
+import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Asegúrate que DailyCalculationData esté importado si no lo está ya
+
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,7 +50,8 @@ Future<void> main() async {
   final mealLogBox = await Hive.openBox<MealLog>(mealLogBoxName);
   final overnightLogBox = await Hive.openBox<OvernightLog>(overnightLogBoxName);
   await Hive.openBox<UserProfileData>(userProfileBoxName);
-  await Hive.openBox<DailyCalculationData>(dailyCalculationsBoxName);
+  final dailyCalculationsBox = await Hive.openBox<DailyCalculationData>(dailyCalculationsBoxName);
+
 
   final themeProvider = ThemeProvider();
   final imageCacheService = ImageCacheService();
@@ -71,8 +76,17 @@ Future<void> main() async {
     sharedPreferences: sharedPreferences,
   );
 
-  // Crear la instancia de DiabetesCalculatorService, pasándole el logRepository
-  final diabetesCalculatorService = DiabetesCalculatorService(logRepository: logRepository);
+  // Crear la instancia de CalculationDataRepository
+  final calculationDataRepository = CalculationDataRepositoryImpl(
+    dailyCalculationsBox: dailyCalculationsBox, // Pasar la instancia abierta
+    supabaseLogSyncService: supabaseLogSyncService,
+    sharedPreferences: sharedPreferences,
+  );
+
+  final diabetesCalculatorService = DiabetesCalculatorService(
+    logRepository: logRepository,
+    calculationDataRepository: calculationDataRepository, // <-- Pasar la nueva dependencia
+  );
 
 
   runApp(
@@ -84,6 +98,7 @@ Future<void> main() async {
         Provider<SupabaseLogSyncService>(create: (_) => supabaseLogSyncService), // Proveer el servicio de sync
         Provider<LogRepository>(create: (_) => logRepository),
         Provider<DiabetesCalculatorService>(create: (_) => diabetesCalculatorService),
+        Provider<CalculationDataRepository>(create: (_) => calculationDataRepository),
       ],
       child: const DiabetesApp(),
     )

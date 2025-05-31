@@ -14,6 +14,8 @@ import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'
 import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importar el repositorio
 import 'package:hive/hive.dart'; // Para la caja de DailyCalculationData
 
+import 'package:diabetes_2/data/repositories/calculation_data_repository.dart'; // Importar
+
 // Asumiendo que dailyCalculationsBoxName está definido globalmente o importado de main.dart
 import 'package:diabetes_2/main.dart' show dailyCalculationsBoxName;
 
@@ -56,7 +58,7 @@ class _TrendsScreenState extends State<TrendsScreen> {
   TrendsSummaryData? _summaryData;
 
   late LogRepository _logRepository;
-  late Box<DailyCalculationData> _dailyCalculationsBox;
+  late CalculationDataRepository _calculationDataRepository;
 
   static const double hypoThreshold = 70;
   static const double hyperThreshold = 180;
@@ -65,7 +67,7 @@ class _TrendsScreenState extends State<TrendsScreen> {
   void initState() {
     super.initState();
     _logRepository = Provider.of<LogRepository>(context, listen: false);
-    _dailyCalculationsBox = Hive.box<DailyCalculationData>(dailyCalculationsBoxName);
+    _calculationDataRepository = Provider.of<CalculationDataRepository>(context, listen: false); // Obtener de Provider
     _loadData();
   }
 
@@ -76,13 +78,11 @@ class _TrendsScreenState extends State<TrendsScreen> {
     final endDate = DateTime.now();
     final startDate = DateTime(endDate.year, endDate.month, endDate.day - (_selectedRange.days -1) , 0, 0, 0);
 
-    // Usar el repositorio para obtener los MealLogs
     List<MealLog> relevantMealLogs = await _logRepository.getMealLogsInDateRange(startDate, endDate);
 
-    // El acceso a _dailyCalculationsBox se mantiene, a menos que también crees un CalculationDataRepository
-    List<DailyCalculationData> relevantDailyCalculations = _dailyCalculationsBox.values.where((calc) {
-      return !calc.date.isBefore(startDate) && !calc.date.isAfter(endDate);
-    }).toList();
+    // Usar el repositorio para obtener los cálculos diarios
+    List<DailyCalculationData> relevantDailyCalculations =
+    await _calculationDataRepository.getDailyCalculationsInDateRange(startDate, endDate);
 
     List<double> glucoseValues = [];
     for (var log in relevantMealLogs) {
