@@ -243,7 +243,6 @@ class DiabetesApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate, // Localizaciones para widgets básicos de Flutter.
         GlobalCupertinoLocalizations.delegate, // Localizaciones para widgets de estilo Cupertino (iOS).
       ],
-      debugShowCheckedModeBanner: false, // Oculta la cinta "DEBUG" en la esquina de la app.
     );
   }
 }
