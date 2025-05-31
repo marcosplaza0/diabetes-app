@@ -27,12 +27,15 @@ import 'package:diabetes_2/data/repositories/log_repository_impl.dart';
 import 'package:diabetes_2/data/repositories/calculation_data_repository.dart';
 import 'package:diabetes_2/data/repositories/calculation_data_repository_impl.dart';
 
-import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Asegúrate que UserProfileData esté importado
 import 'package:diabetes_2/data/repositories/user_profile_repository.dart';
 import 'package:diabetes_2/data/repositories/user_profile_repository_impl.dart';
 
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:diabetes_2/features/food_injections/presentation/food_injections_view_model.dart'; // Importar el ViewModel
+import 'package:diabetes_2/features/notes/presentation/diabetes_log_view_model.dart';
+import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Asegúrate que está importado
 
 
 
@@ -110,6 +113,20 @@ Future<void> main() async {
         Provider<DiabetesCalculatorService>(create: (_) => diabetesCalculatorService),
         Provider<CalculationDataRepository>(create: (_) => calculationDataRepository),
         Provider<UserProfileRepository>(create: (_) => userProfileRepository),
+        ChangeNotifierProvider(
+          create: (context) => FoodInjectionsViewModel(
+            // Obtener DiabetesCalculatorService de los providers ya existentes
+            calculatorService: Provider.of<DiabetesCalculatorService>(context, listen: false),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => DiabetesLogViewModel(
+            logRepository: Provider.of<LogRepository>(context, listen: false),
+            calculatorService: Provider.of<DiabetesCalculatorService>(context, listen: false),
+            supabaseLogSyncService: Provider.of<SupabaseLogSyncService>(context, listen: false), // Para DailyCalcData sync
+            dailyCalculationsBox: dailyCalculationsBox, // Pasar la caja directamente
+          ),
+        ),
       ],
       child: const DiabetesApp(),
     )
