@@ -26,10 +26,14 @@ import 'package:diabetes_2/data/repositories/log_repository.dart';
 import 'package:diabetes_2/data/repositories/log_repository_impl.dart';
 import 'package:diabetes_2/data/repositories/calculation_data_repository.dart';
 import 'package:diabetes_2/data/repositories/calculation_data_repository_impl.dart';
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Asegúrate que DailyCalculationData esté importado si no lo está ya
+
+import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Asegúrate que UserProfileData esté importado
+import 'package:diabetes_2/data/repositories/user_profile_repository.dart';
+import 'package:diabetes_2/data/repositories/user_profile_repository_impl.dart';
 
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 
 const String mealLogBoxName = 'meal_logs';
@@ -49,7 +53,7 @@ Future<void> main() async {
 
   final mealLogBox = await Hive.openBox<MealLog>(mealLogBoxName);
   final overnightLogBox = await Hive.openBox<OvernightLog>(overnightLogBoxName);
-  await Hive.openBox<UserProfileData>(userProfileBoxName);
+  final userProfileBox = await Hive.openBox<UserProfileData>(userProfileBoxName);
   final dailyCalculationsBox = await Hive.openBox<DailyCalculationData>(dailyCalculationsBoxName);
 
 
@@ -65,7 +69,7 @@ Future<void> main() async {
     url: "https://fpjtddyybxrlxfjhswnz.supabase.co",
   );
 
-  // Inicializar SupabaseLogSyncService (si no es un singleton que se auto-inicialice)
+  final supabaseClient = Supabase.instance.client; // Obtener el cliente de Supabase
   final supabaseLogSyncService = SupabaseLogSyncService();
 
   // Crear la instancia de LogRepository que DiabetesCalculatorService necesitará
@@ -88,6 +92,12 @@ Future<void> main() async {
     calculationDataRepository: calculationDataRepository, // <-- Pasar la nueva dependencia
   );
 
+  final userProfileRepository = UserProfileRepositoryImpl(
+    userProfileBox: userProfileBox, // Pasar la instancia abierta
+    supabaseClient: supabaseClient, // Pasar el cliente de Supabase
+    imageCacheService: imageCacheService, // Pasar el ImageCacheService
+  );
+
 
   runApp(
     MultiProvider(
@@ -99,6 +109,7 @@ Future<void> main() async {
         Provider<LogRepository>(create: (_) => logRepository),
         Provider<DiabetesCalculatorService>(create: (_) => diabetesCalculatorService),
         Provider<CalculationDataRepository>(create: (_) => calculationDataRepository),
+        Provider<UserProfileRepository>(create: (_) => userProfileRepository),
       ],
       child: const DiabetesApp(),
     )

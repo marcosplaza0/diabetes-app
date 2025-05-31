@@ -20,19 +20,22 @@ class UserProfileDataAdapter extends TypeAdapter<UserProfileData> {
       username: fields[0] as String?,
       email: fields[1] as String?,
       avatarCacheKey: fields[2] as String?,
+      gender: fields[3] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserProfileData obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.username)
       ..writeByte(1)
       ..write(obj.email)
       ..writeByte(2)
-      ..write(obj.avatarCacheKey);
+      ..write(obj.avatarCacheKey)
+      ..writeByte(3)
+      ..write(obj.gender);
   }
 
   @override
