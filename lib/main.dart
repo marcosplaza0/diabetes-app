@@ -39,6 +39,9 @@ import 'package:diabetes_2/features/trends/presentation/trends_view_model.dart';
 import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // Importar ViewModel
 import 'package:diabetes_2/features/settings/presentation/settings_view_model.dart'; // Importar ViewModel
 
+import 'package:diabetes_2/core/auth/presentation/account_view_model.dart';
+
+
 
 
 const String mealLogBoxName = 'meal_logs';
@@ -147,6 +150,15 @@ Future<void> main() async {
             logSyncService: Provider.of<SupabaseLogSyncService>(context, listen: false),
             logRepository: Provider.of<LogRepository>(context, listen: false),
             themeProvider: Provider.of<ThemeProvider>(context, listen: false), // Pasar ThemeProvider
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AccountViewModel(
+            userProfileRepository: Provider.of<UserProfileRepository>(context, listen: false),
+            imageCacheService: Provider.of<ImageCacheService>(context, listen: false),
+            supabaseClient: supabaseClient, // Pasar el cliente de Supabase directamente
+            logSyncService: Provider.of<SupabaseLogSyncService>(context, listen: false),
+            sharedPreferences: sharedPreferences, // Pasar SharedPreferences
           ),
         ),
       ],

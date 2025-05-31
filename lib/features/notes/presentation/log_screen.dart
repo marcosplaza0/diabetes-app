@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:diabetes_2/features/notes/presentation/diabetes_log_view_model.dart'; // Importar ViewModel
+import 'package:diabetes_2/core/widgets/custom_numeric_text_field.dart';
 
 // Las constantes de estilo podrían moverse a un archivo de utilidades de UI
 const double kDefaultPadding = 16.0;
@@ -51,9 +52,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     });
   }
 
-  // Los métodos de selección de fecha/hora y guardado se moverán al ViewModel
-  // o serán llamados desde el ViewModel.
-
   Widget _buildDateTimePickerTile({
     required String label,
     required String value,
@@ -70,43 +68,6 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
     );
   }
 
-  Widget _buildNumericTextField({
-    required TextEditingController controller,
-    required String labelText,
-    required IconData icon,
-    bool isOptional = false,
-    required BuildContext context, // Pasar context para Theme
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: kVerticalSpacerSmall),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: labelText,
-          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(kBorderRadius),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0)
-          ),
-          floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-        ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-        ],
-        validator: (value) {
-          if (!isOptional && (value == null || value.isEmpty)) return 'Este campo es obligatorio';
-          if (value != null && value.isNotEmpty) {
-            final number = double.tryParse(value);
-            if (number == null) return 'Introduce un número válido';
-            if (number < 0) return 'El valor no puede ser negativo';
-          }
-          return null;
-        },
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,13 +139,35 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
                       const SizedBox(height: kVerticalSpacerSmall),
                       Text("Detalles de la Comida", style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary)),
                       const SizedBox(height: kVerticalSpacerSmall),
-                      _buildNumericTextField(context: context, controller: viewModel.initialBloodSugarController, labelText: 'Glucemia Inicial (mg/dL)', icon: Icons.bloodtype_outlined),
-                      _buildNumericTextField(context: context, controller: viewModel.carbohydratesController, labelText: 'Hidratos de Carbono (g)', icon: Icons.egg_outlined),
-                      _buildNumericTextField(context: context, controller: viewModel.fastInsulinController, labelText: 'Insulina Rápida (U)', icon: Icons.colorize_outlined),
+                      CustomNumericTextField(
+                        // context: context, // Ya no se pasa context directamente, el widget lo obtiene
+                        controller: viewModel.initialBloodSugarController,
+                        labelText: 'Glucemia Inicial (mg/dL)',
+                        icon: Icons.bloodtype_outlined,
+                        keyboardType: TextInputType.number, // Solo enteros si es necesario
+                      ),
+                      CustomNumericTextField(
+                        controller: viewModel.carbohydratesController,
+                        labelText: 'Hidratos de Carbono (g)',
+                        icon: Icons.egg_outlined,
+                        keyboardType: TextInputType.number, // Solo enteros si es necesario
+                      ),
+                      CustomNumericTextField(
+                        controller: viewModel.fastInsulinController,
+                        labelText: 'Insulina Rápida (U)',
+                        icon: Icons.colorize_outlined,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true), // Permite decimales
+                      ),
                       const SizedBox(height: kVerticalSpacerMedium),
                       Text("Post-Comida (opcional, ~3 horas después)", style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary)),
                       const SizedBox(height: kVerticalSpacerSmall),
-                      _buildNumericTextField(context: context, controller: viewModel.finalBloodSugarController, labelText: 'Glucemia Final (mg/dL)', icon: Icons.bloodtype_outlined, isOptional: true),
+                      CustomNumericTextField(
+                        controller: viewModel.finalBloodSugarController,
+                        labelText: 'Glucemia Final (mg/dL)',
+                        icon: Icons.bloodtype_outlined,
+                        isOptional: true,
+                        keyboardType: TextInputType.number, // Solo enteros si es necesario
+                      ),
                       const SizedBox(height: kVerticalSpacerLarge),
                       ElevatedButton.icon(
                         icon: viewModel.isSaving ? const SizedBox(width:18, height:18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(viewModel.isEditMode ? Icons.sync_alt_outlined : Icons.save_alt_outlined),
@@ -217,12 +200,29 @@ class _DiabetesLogScreenState extends State<DiabetesLogScreen> {
                       const SizedBox(height: kVerticalSpacerSmall),
                       Text("Detalles Nocturnos", style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary)),
                       const SizedBox(height: kVerticalSpacerSmall),
-                      _buildNumericTextField(context: context, controller: viewModel.beforeSleepBloodSugarController, labelText: 'Glucemia antes de dormir (mg/dL)', icon: Icons.nightlight_round_outlined),
-                      _buildNumericTextField(context: context, controller: viewModel.slowInsulinController, labelText: 'Insulina Lenta (U)', icon: Icons.colorize_outlined),
+                      CustomNumericTextField(
+                        controller: viewModel.beforeSleepBloodSugarController,
+                        labelText: 'Glucemia antes de dormir (mg/dL)',
+                        icon: Icons.nightlight_round_outlined,
+                        isOptional: false,
+                        keyboardType: TextInputType.number, // Solo enteros si es necesario
+                      ),
+                      CustomNumericTextField(
+                        controller: viewModel.slowInsulinController,
+                        labelText: 'Insulina lenta (U)',
+                        icon: Icons.colorize_outlined,
+                        isOptional: false,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true), // Permite decimales
+                      ),
                       const SizedBox(height: kVerticalSpacerMedium),
                       Text("Al Despertar (opcional)", style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary)),
                       const SizedBox(height: kVerticalSpacerSmall),
-                      _buildNumericTextField(context: context, controller: viewModel.afterWakeUpBloodSugarController, labelText: 'Glucemia al levantarse (mg/dL)', icon: Icons.wb_sunny_outlined, isOptional: true),
+                      CustomNumericTextField(
+                        controller: viewModel.afterWakeUpBloodSugarController,
+                        labelText: 'Glucemia al levantarse (mg/dL)',
+                        icon: Icons.wb_sunny_outlined,
+                        keyboardType: TextInputType.number, // Solo enteros si es necesario
+                      ),
                       const SizedBox(height: kVerticalSpacerLarge),
                       ElevatedButton.icon(
                         icon: viewModel.isSaving ? const SizedBox(width:18, height:18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(viewModel.isEditMode ? Icons.sync_alt_outlined : Icons.save_alt_outlined),

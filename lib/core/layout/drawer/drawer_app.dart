@@ -16,6 +16,7 @@ import 'package:diabetes_2/main.dart' show supabase, mealLogBoxName, overnightLo
 import 'drawer_loader.dart';
 import 'package:diabetes_2/data/models/logs/logs.dart'; // Para logout
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Para logout
+import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart';
 
 const String cloudSavePreferenceKey = 'saveToCloudEnabled'; // Para logout
 
@@ -246,44 +247,89 @@ class _DrawerAppState extends State<DrawerApp> {
           ),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: DrawerLoader.loadDrawerItems(),
+              future: DrawerLoader.loadDrawerItems(), // El future se mantiene
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting && !_isProcessingLogout) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) return Center(child: Text('Error al cargar el menú: ${snapshot.error}'));
-                if (!snapshot.hasData || snapshot.data!.isEmpty) return const Center(child: Text('No hay elementos en el menú.'));
+                // Usar el nuevo widget
+                return LoadingOrEmptyStateWidget(
+                  isLoading: snapshot.connectionState == ConnectionState.waiting && !_isProcessingLogout,
+                  // No mostrar 'Cargando...' si ya se está procesando un logout
+                  loadingText: "Cargando menú...",
+                  hasError: snapshot.hasError,
+                  error: snapshot.error,
+                  errorMessage: snapshot.hasError ? "Error al cargar el menú." : null,
+                  // onRetry: () {
+                  //   // DrawerLoader usa un caché. Para reintentar de verdad,
+                  //   // DrawerLoader necesitaría un método para invalidar su caché.
+                  //   // Por ahora, un simple setState podría re-evaluar el FutureBuilder.
+                  //   setState(() {});
+                  // },
+                  isEmpty: (!snapshot.hasData || snapshot.data!.isEmpty) && !(snapshot.connectionState == ConnectionState.waiting) && !snapshot.hasError,
+                  emptyMessage: "No hay elementos en el menú.",
+                  emptyIcon: Icons.list_alt_outlined, // Icono para menú vacío
+                  childIfData: Builder( // Usar Builder para asegurar que snapshot.data no es null aquí
+                      builder: (context) {
+                        // Esta parte solo se construye si isLoading=false, hasError=false, isEmpty=false
+                        // por lo que snapshot.hasData y snapshot.data! son seguros de usar.
+                        final items = snapshot.data!;
+                        final goRouter = GoRouter.of(context);
+                        // Puede que necesites Uri.tryParse si la URI no siempre es válida
+                        final currentUri = Uri.tryParse(goRouter.routerDelegate.currentConfiguration.uri.toString());
+                        final currentLocation = currentUri?.path ?? '/';
 
-                final items = snapshot.data!;
-                final goRouter = GoRouter.of(context);
-                final currentLocation = Uri.parse(goRouter.routerDelegate.currentConfiguration.uri.toString()).path;
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    if (item['type'] == 'divider') return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Divider(height: 1, color: theme.colorScheme.outlineVariant));
-                    if (item['type'] == 'padding') return SizedBox(height: item['value'] as double? ?? 0.0);
-                    if (item['type'] == 'item') {
-                      final label = item['label'] as String? ?? 'Unnamed Item';
-                      final iconKey = item['icon'] as String? ?? 'default_icon';
-                      final route = item['route'] as String? ?? '/';
-                      final selected = currentLocation == route;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2.0),
-                        child: ListTile(
-                          leading: Icon(IconHelper.getIcon(iconKey), color: selected ? drawerSelectedItemColor : drawerUnselectedItemColor),
-                          title: Text(label, style: theme.textTheme.labelLarge?.copyWith(color: selected ? drawerSelectedItemColor : drawerUnselectedItemColor, fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                          selected: selected, selectedTileColor: drawerIndicatorColor,
-                          onTap: _isProcessingLogout ? null : () { Navigator.of(context).pop(); if (!selected) context.go(route); },
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            if (item['type'] == 'divider') {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Divider(
+                                  height: 1,
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              );
+                            } else if (item['type'] == 'padding') {
+                              return SizedBox(height: item['value'] as double? ?? 0.0);
+                            } else if (item['type'] == 'item') {
+                              final label = item['label'] as String? ?? 'Unnamed Item';
+                              final iconKey = item['icon'] as String? ?? 'default_icon';
+                              final route = item['route'] as String? ?? '/';
+                              final selected = currentLocation == route;
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                child: ListTile(
+                                  leading: Icon(
+                                    IconHelper.getIcon(iconKey),
+                                    color: selected ? drawerSelectedItemColor : drawerUnselectedItemColor,
+                                  ),
+                                  title: Text(
+                                    label,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: selected ? drawerSelectedItemColor : drawerUnselectedItemColor,
+                                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                  selected: selected,
+                                  selectedTileColor: drawerIndicatorColor,
+                                  onTap: _isProcessingLogout ? null : () {
+                                    Navigator.of(context).pop();
+                                    if (!selected) context.go(route);
+                                  },
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        );
+                      }
+                  ),
                 );
               },
             ),

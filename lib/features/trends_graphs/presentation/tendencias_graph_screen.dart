@@ -16,6 +16,7 @@ import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // P
 import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart' show DayPeriod;
 // import 'package:diabetes_2/data/repositories/log_repository.dart'; // No es necesario
 import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_view_model.dart';
+import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart';
 
 
 class TendenciasGraphScreen extends StatefulWidget { // Lo mantenemos StatefulWidget para inicializar dateFormatting
@@ -241,48 +242,48 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
         padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
         child: Column(
           children: [
+            // ... (el Row con _buildDaysSelector y el IconButton de refrescar se mantiene igual)
             Padding(
               padding: const EdgeInsets.only(bottom: 6.0, left: 4, right: 4),
               child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4), width: 1),
-                  color: theme.cardColor.withOpacity(0.8),
-                ),
+                // ...
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Row(children: [_buildDaysSelector(context, viewModel, theme), const SizedBox(width: 10), Text("Registros", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600))]),
                     IconButton(
                       icon: Icon(Icons.refresh_rounded, color: theme.colorScheme.primary, size: 26),
-                      onPressed: viewModel.isLoading ? null : () => viewModel.loadChartData(themeDataForDots: theme), // Pasar theme
+                      onPressed: viewModel.isLoading ? null : () => viewModel.loadChartData(themeDataForDots: theme),
                       tooltip: 'Recargar datos',
                     )
                   ],
                 ),
               ),
             ),
-            if (!viewModel.isLoading) _buildLegend(context, viewModel, theme),
-            if (viewModel.isLoading) const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (viewModel.chartBarsGraph1.isEmpty && viewModel.chartBarsGraph2.isEmpty && viewModel.chartBarsGraph3.isEmpty)
-              Expanded(child: Center(child: Padding(padding: const EdgeInsets.all(24.0),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.bar_chart_rounded, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.35)),
-                  const SizedBox(height: 20),
-                  Text('No hay registros de comidas', style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.9)), textAlign: TextAlign.center),
-                  const SizedBox(height: 4),
-                  Text('en los últimos ${viewModel.numberOfDays} día${viewModel.numberOfDays == 1 ? '' : 's'}.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)), textAlign: TextAlign.center),
-                ]),
-              )))
-            else Expanded(child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(children: [
-                  _buildChartSection(context, viewModel, "Madrugada (00:00 - 08:00)", viewModel.chartBarsGraph1, viewModel.sourceLogsG1, TendenciasGraphViewModel.g1MinX, TendenciasGraphViewModel.g1MaxX, theme),
-                  _buildChartSection(context, viewModel, "Mañana/Tarde (08:00 - 16:00)", viewModel.chartBarsGraph2, viewModel.sourceLogsG2, TendenciasGraphViewModel.g2MinX, TendenciasGraphViewModel.g2MaxX, theme),
-                  _buildChartSection(context, viewModel, "Tarde/Noche (16:00 - 24:00)", viewModel.chartBarsGraph3, viewModel.sourceLogsG3, TendenciasGraphViewModel.g3MinX, TendenciasGraphViewModel.g3MaxX, theme),
-                ]),
-              )),
+            if (!viewModel.isLoading) _buildLegend(context, viewModel, theme), // Se mantiene
+
+            Expanded( // Envolver la parte que cambia (loader, empty, data) en Expanded
+              child: LoadingOrEmptyStateWidget(
+                isLoading: viewModel.isLoading,
+                loadingText: "Cargando gráficos...",
+                // Añadir manejo de errores si el ViewModel lo soporta
+                // hasError: viewModel.hasError,
+                // errorMessage: viewModel.errorMessage,
+                // onRetry: () => viewModel.loadChartData(themeDataForDots: theme),
+
+                isEmpty: !viewModel.isLoading && viewModel.chartBarsGraph1.isEmpty && viewModel.chartBarsGraph2.isEmpty && viewModel.chartBarsGraph3.isEmpty,
+                emptyMessage: 'No hay registros de comidas en los últimos ${viewModel.numberOfDays} día${viewModel.numberOfDays == 1 ? '' : 's'}.',
+                emptyIcon: Icons.bar_chart_rounded,
+                childIfData: SingleChildScrollView( // Esto es childIfData
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(children: [
+                    _buildChartSection(context, viewModel, "Madrugada (00:00 - 08:00)", viewModel.chartBarsGraph1, viewModel.sourceLogsG1, TendenciasGraphViewModel.g1MinX, TendenciasGraphViewModel.g1MaxX, theme),
+                    _buildChartSection(context, viewModel, "Mañana/Tarde (08:00 - 16:00)", viewModel.chartBarsGraph2, viewModel.sourceLogsG2, TendenciasGraphViewModel.g2MinX, TendenciasGraphViewModel.g2MaxX, theme),
+                    _buildChartSection(context, viewModel, "Tarde/Noche (16:00 - 24:00)", viewModel.chartBarsGraph3, viewModel.sourceLogsG3, TendenciasGraphViewModel.g3MinX, TendenciasGraphViewModel.g3MaxX, theme),
+                  ]),
+                ),
+              ),
+            ),
           ],
         ),
       ),

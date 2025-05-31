@@ -49,7 +49,7 @@ class TendenciasGraphViewModel extends ChangeNotifier {
   int get numberOfDays => _numberOfDays;
 
   // Constantes para los límites X de los gráficos (minutos desde medianoche)
-  static const double g1MinX = 0;      // 00:00
+  static const double g1MinX = 4;      // 00:00
   static const double g1MaxX = 8 * 60; // 08:00
   static const double g2MinX = 8 * 60; // 08:00
   static const double g2MaxX = 16 * 60;// 16:00

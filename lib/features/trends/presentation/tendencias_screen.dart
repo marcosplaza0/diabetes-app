@@ -1,18 +1,11 @@
-// lib/features/trends/presentation/tendencias_screen.dart
-// import 'dart:math'; // Ya no es necesario aquí directamente
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // Para PieChartSectionData
-// import 'package:hive_flutter/hive_flutter.dart'; // No directamente
-// import 'package:intl/intl.dart'; // No directamente
-// import 'package:collection/collection.dart'; // No directamente
 import 'package:provider/provider.dart';
 
 import 'package:diabetes_2/core/layout/main_layout.dart';
-// import 'package:diabetes_2/data/models/logs/logs.dart'; // No directamente
-// import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // No directamente
 import 'package:diabetes_2/features/trends/presentation/trends_view_model.dart'; // Importar ViewModel
-
-// DateRangeOption y TrendsSummaryData ahora están en trends_view_model.dart
+import 'package:diabetes_2/core/widgets/summary_stat_card.dart';
+import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart';
 
 class TrendsScreen extends StatelessWidget { // Convertido a StatelessWidget
   const TrendsScreen({super.key});
@@ -64,58 +57,34 @@ class TrendsScreen extends StatelessWidget { // Convertido a StatelessWidget
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildSummaryCard(
+            Expanded(child: SummaryStatCard(
                 title: "Glucosa Promedio",
                 value: "${viewModel.summaryData!.averageGlucose?.toStringAsFixed(0) ?? '--'} mg/dL",
                 icon: Icons.show_chart_rounded,
                 cardBackgroundColor: theme.colorScheme.primaryContainer,
                 onCardColor: theme.colorScheme.onPrimaryContainer,
-                theme: theme)),
+            )),
             const SizedBox(width: 10),
-            Expanded(child: _buildSummaryCard(
+            Expanded(child: SummaryStatCard(
                 title: "HbA1c Estimada",
                 value: "${viewModel.summaryData!.estimatedA1c?.toStringAsFixed(1) ?? '--'}%",
                 icon: Icons.bloodtype_outlined,
                 cardBackgroundColor: theme.colorScheme.secondaryContainer,
                 onCardColor: theme.colorScheme.onSecondaryContainer,
-                theme: theme)),
+                )),
           ],
         ),
         const SizedBox(height: 16),
         if (viewModel.summaryData!.averageDailyCorrectionIndex != null)
-          _buildSummaryCard(
+          SummaryStatCard(
             title: "Índice Corrección Prom.",
             value: viewModel.summaryData!.averageDailyCorrectionIndex!.toStringAsFixed(1),
             icon: Icons.settings_ethernet_rounded,
             cardBackgroundColor: theme.colorScheme.tertiaryContainer,
             onCardColor: theme.colorScheme.onTertiaryContainer,
-            theme: theme,
             isWide: true,
           ),
       ],
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required String title, required String value, required IconData icon,
-    required Color cardBackgroundColor, required Color onCardColor,
-    required ThemeData theme, bool isWide = false
-  }) {
-    return Card(
-      elevation: 1.0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      color: cardBackgroundColor, clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-        child: Column(
-          crossAxisAlignment: isWide ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(title, style: theme.textTheme.titleSmall?.copyWith(color: onCardColor.withOpacity(0.9), fontWeight: FontWeight.w500)),
-            const SizedBox(height: 10),
-            Text(value, style: theme.textTheme.headlineMedium?.copyWith(color: onCardColor, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
     );
   }
 
@@ -188,40 +157,43 @@ class TrendsScreen extends StatelessWidget { // Convertido a StatelessWidget
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Usar context.watch para que la UI se reconstruya cuando cambien los datos del ViewModel
     final viewModel = context.watch<TrendsViewModel>();
 
     return MainLayout(
       title: "Resumen de Tendencias",
       body: RefreshIndicator(
-        onRefresh: viewModel.loadData, // Llamar al ViewModel
+        onRefresh: viewModel.loadData,
         color: theme.colorScheme.primary,
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            _buildDateRangeSelector(context, viewModel, theme), // Pasar viewModel
-            const SizedBox(height: 20),
-            if (viewModel.isLoading)
-              const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 40.0), child:CircularProgressIndicator()))
-            else if (viewModel.summaryData == null || viewModel.summaryData!.glucoseReadingsCount < 5)
-              Center(
-                child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 48.0, horizontal: 16),
-                    child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.data_exploration_outlined, size: 60, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-                      const SizedBox(height: 16),
-                      Text("No hay suficientes datos en el rango seleccionado para un resumen detallado.", style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
-                    ])
-                ),
-              )
-            else ...[
-                _buildSummarySection(context, viewModel, theme), // Pasar viewModel
-                const SizedBox(height: 24),
-                Text("La HbA1c estimada es solo una aproximación y puede diferir de los resultados de laboratorio. Consulta siempre a tu médico.", textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.75), fontStyle: FontStyle.italic)),
-                const SizedBox(height: 24),
-              ]
-          ],
+        child: LoadingOrEmptyStateWidget(
+          isLoading: viewModel.isLoading,
+          loadingText: "Calculando tendencias...",
+          // Asumimos que el ViewModel podría tener un estado de error si loadData falla
+          // hasError: viewModel.hasError, // Necesitarías añadir hasError al ViewModel
+          // errorMessage: viewModel.errorMessage, // Necesitarías añadir errorMessage al ViewModel
+          // onRetry: viewModel.loadData,
+
+          isEmpty: !viewModel.isLoading && (viewModel.summaryData == null || viewModel.summaryData!.glucoseReadingsCount < 5),
+          emptyMessage: "No hay suficientes datos en el rango seleccionado para un resumen detallado.",
+          emptyIcon: Icons.data_exploration_outlined,
+          childIfData: ListView( // El ListView es childIfData
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              _buildDateRangeSelector(context, viewModel, theme), // Este método helper se mantiene
+              const SizedBox(height: 20),
+              // El if/else anterior para mostrar datos o mensaje de "no suficientes datos"
+              // ahora está manejado por LoadingOrEmptyStateWidget,
+              // así que aquí directamente construimos la UI para cuando hay datos.
+              _buildSummarySection(context, viewModel, theme), // Este método helper se mantiene
+              const SizedBox(height: 24),
+              Text(
+                "La HbA1c estimada es solo una aproximación y puede diferir de los resultados de laboratorio. Consulta siempre a tu médico.",
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.75), fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

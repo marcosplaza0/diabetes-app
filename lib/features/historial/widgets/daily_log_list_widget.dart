@@ -1,13 +1,14 @@
 // lib/features/historial/widgets/daily_log_list_widget.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // Para ValueListenableBuilder y Box
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart'; // Para Provider
+import 'package:provider/provider.dart';
 
 import 'package:diabetes_2/data/models/logs/logs.dart';
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Para nombres de cajas (listeners)
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Importar el repositorio
+import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName;
+import 'package:diabetes_2/data/repositories/log_repository.dart';
+import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart'; // Importar el widget mejorado
 
 class DailyLogListWidget extends StatefulWidget {
   final DateTime selectedDate;
@@ -23,11 +24,13 @@ class DailyLogListWidget extends StatefulWidget {
 
 class _DailyLogListWidgetState extends State<DailyLogListWidget> {
   late LogRepository _logRepository;
-  // Las cajas de Hive pueden mantenerse para los ValueListenableBuilder si el repo no es un Listenable.
-  // Opcionalmente, el repositorio mismo podría ser un Listenable.
   late Box<MealLog> _mealLogBoxListener;
   late Box<OvernightLog> _overnightLogBoxListener;
 
+  // Key para el FutureBuilder, para poder reiniciarlo si es necesario (ej. al cambiar de fecha)
+  // O, simplemente, el cambio de widget.selectedDate ya causa un rebuild del FutureBuilder.
+  // Si se necesita re-disparar el future por otra razón, se puede usar una key.
+  // GlobalKey _futureBuilderKey = GlobalKey();
 
   @override
   void initState() {
@@ -37,11 +40,11 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
     _overnightLogBoxListener = Hive.box<OvernightLog>(overnightLogBoxName);
   }
 
-  // Este método ahora será asíncrono ya que el repositorio devuelve Futures
   Future<List<dynamic>> _getFilteredAndSortedLogs() async {
     return await _logRepository.getFilteredAndSortedLogsForDate(widget.selectedDate);
   }
 
+  // ... (métodos _getGlucoseColor, _buildDetailItem, _buildGlucoseDetailItem, _buildMealLogTile, _buildOvernightLogTile se mantienen igual)
   Color _getGlucoseColor(double? bG, ThemeData theme) {
     if (bG == null) return theme.colorScheme.onSurfaceVariant.withOpacity(0.7);
     if (bG < 70) return theme.colorScheme.error;
@@ -90,6 +93,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
         iconColor: glucoseColor.withOpacity(0.85)
     );
   }
+
 
   Widget _buildMealLogTile(MealLog log, ThemeData theme) {
     final timeFormat = DateFormat.Hm(Localizations.localeOf(context).languageCode);
@@ -217,72 +221,60 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Usamos ValueListenableBuilder para reaccionar a cambios en las cajas de Hive.
-    // Cuando cambian, el FutureBuilder se reconstruirá y llamará a _getFilteredAndSortedLogs.
+    // ValueListenableBuilder sigue siendo útil para reaccionar a cambios en Hive
+    // que podrían no ser iniciados por este widget (ej. un log añadido en otra pantalla).
+    // Esto hará que el FutureBuilder se reconstruya.
     return ValueListenableBuilder<Box<MealLog>>(
       valueListenable: _mealLogBoxListener.listenable(),
-      builder: (context, _, __) { // No necesitamos mealBox directamente aquí
+      builder: (context, _, __) {
         return ValueListenableBuilder<Box<OvernightLog>>(
           valueListenable: _overnightLogBoxListener.listenable(),
-          builder: (context, ___, ____) { // No necesitamos overnightBox directamente aquí
-            // FutureBuilder para manejar el estado de carga de los logs desde el repositorio
+          builder: (context, ___, ____) {
             return FutureBuilder<List<dynamic>>(
-              future: _getFilteredAndSortedLogs(), // Llama al método asíncrono
+              future: _getFilteredAndSortedLogs(),
+              // key: _futureBuilderKey, // Descomentar si necesitas reiniciar el future externamente
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error cargando logs: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.forum_outlined, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
-                          const SizedBox(height: 20),
-                          Text(
-                            'No hay registros para el',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8)),
-                          ),
-                          Text(
-                            DateFormat('EEEE dd MMMM', 'es_ES').format(widget.selectedDate),
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            "Puedes añadir nuevas notas desde la pantalla de inicio o usando el botón '+' en algunas pantallas.",
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                final List<dynamic> logsToShow = snapshot.data!;
-                return ListView.builder(
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  itemCount: logsToShow.length,
-                  itemBuilder: (context, index) {
-                    final log = logsToShow[index];
-                    if (log is MealLog) {
-                      return _buildMealLogTile(log, theme);
-                    } else if (log is OvernightLog) {
-                      return _buildOvernightLogTile(log, theme);
-                    }
-                    return const SizedBox.shrink();
+                return LoadingOrEmptyStateWidget(
+                  isLoading: snapshot.connectionState == ConnectionState.waiting,
+                  loadingText: "Cargando registros...",
+                  hasError: snapshot.hasError,
+                  error: snapshot.error, // Pasar el objeto de error
+                  errorMessage: snapshot.hasError ? "No se pudieron cargar los registros." : null,
+                  onRetry: () {
+                    // Forzar la reconstrucción del FutureBuilder para reintentar
+                    setState(() {
+                      // Si usaras una GlobalKey para el FutureBuilder:
+                      // _futureBuilderKey = GlobalKey();
+                      // O, simplemente, llamar a setState() puede ser suficiente para que
+                      // el FutureBuilder re-ejecute su 'future' si la dependencia (widget.selectedDate)
+                      // no ha cambiado pero quieres reintentar.
+                      // Si la 'selectedDate' cambia, el FutureBuilder se reconstruye automáticamente.
+                      // Para un reintento explícito sin cambio de fecha, necesitarías una
+                      // estrategia para que el FutureBuilder vuelva a ejecutar el future.
+                      // Una forma simple es cambiar una 'key' o llamar a un método que actualice el estado y cause rebuild.
+                    });
                   },
+                  isEmpty: !snapshot.hasData || snapshot.data!.isEmpty,
+                  emptyMessage: "No hay registros para el\n${DateFormat('EEEE dd MMMM', 'es_ES').format(widget.selectedDate)}",
+                  emptyIcon: Icons.forum_outlined,
+                  childIfData: ListView.builder(
+                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    itemCount: snapshot.hasData ? snapshot.data!.length : 0,
+                    itemBuilder: (context, index) {
+                      final log = snapshot.data![index];
+                      if (log is MealLog) {
+                        return _buildMealLogTile(log, theme);
+                      } else if (log is OvernightLog) {
+                        return _buildOvernightLogTile(log, theme);
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 );
               },
             );
