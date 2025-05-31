@@ -35,7 +35,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:diabetes_2/features/food_injections/presentation/food_injections_view_model.dart'; // Importar el ViewModel
 import 'package:diabetes_2/features/notes/presentation/diabetes_log_view_model.dart';
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Asegúrate que está importado
+import 'package:diabetes_2/features/trends/presentation/trends_view_model.dart'; // Importar el ViewModel
+import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // Importar ViewModel
+import 'package:diabetes_2/features/settings/presentation/settings_view_model.dart'; // Importar ViewModel
 
 
 
@@ -125,6 +127,26 @@ Future<void> main() async {
             calculatorService: Provider.of<DiabetesCalculatorService>(context, listen: false),
             supabaseLogSyncService: Provider.of<SupabaseLogSyncService>(context, listen: false), // Para DailyCalcData sync
             dailyCalculationsBox: dailyCalculationsBox, // Pasar la caja directamente
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => TrendsViewModel(
+            logRepository: Provider.of<LogRepository>(context, listen: false),
+            calculationDataRepository: Provider.of<CalculationDataRepository>(context, listen: false),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => TendenciasGraphViewModel(
+            logRepository: Provider.of<LogRepository>(context, listen: false),
+            calculatorService: Provider.of<DiabetesCalculatorService>(context, listen: false),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SettingsViewModel(
+            sharedPreferences: Provider.of<SharedPreferences>(context, listen: false),
+            logSyncService: Provider.of<SupabaseLogSyncService>(context, listen: false),
+            logRepository: Provider.of<LogRepository>(context, listen: false),
+            themeProvider: Provider.of<ThemeProvider>(context, listen: false), // Pasar ThemeProvider
           ),
         ),
       ],
