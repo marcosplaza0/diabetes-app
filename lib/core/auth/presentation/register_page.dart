@@ -124,34 +124,35 @@ class _RegisterPageState extends State<RegisterPage> {
   /// @param error El objeto de error capturado.
   /// @return Un String con el mensaje de error formateado para el usuario.
   String _processErrorMessage(dynamic error) {
-    if (error is supabase_auth.AuthException) { // Si el error es una AuthException de Supabase.
-      String errorMessage = error.message.toLowerCase();
-      // Mapea mensajes de error comunes de registro a mensajes más amigables.
-      if (errorMessage.contains('user already registered') || errorMessage.contains('user already exists')) {
+    if (error is supabase_auth.AuthException) {
+      String message = error.message.toLowerCase();
+      if (message.contains('user already registered') || message.contains('user already exists')) {
         return 'Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.';
-      }
-      if (errorMessage.contains('email rate limit exceeded')) {
+      } else if (message.contains('email rate limit exceeded')) {
         return 'Se han enviado demasiadas solicitudes para este correo. Por favor, inténtalo más tarde.';
-      }
-      if (errorMessage.contains('password should be at least 6 characters')) {
+      } else if (message.contains('password should be at least 6 characters')) {
         return 'La contraseña es demasiado corta. Debe tener al menos 6 caracteres.';
+      } else if (message.contains('network request failed') || message.contains('failed host lookup') || message.contains('socketexception')) {
+        return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
       }
-      // Fallback para otros errores de AuthException.
+      // Para otros errores de AuthException específicos del registro, se podría añadir más lógica aquí.
+      // Si no es uno de los anteriores, se devuelve el mensaje original o uno genérico.
       return error.message.isNotEmpty ? error.message : 'Ocurrió un error durante el registro.';
     }
 
-    // Manejo para otros tipos de errores.
-    String generalErrorMessage = error.toString();
-    if (generalErrorMessage.startsWith("Exception: ")) {
-      generalErrorMessage = generalErrorMessage.replaceFirst("Exception: ", "");
-    }
-    if (generalErrorMessage.toLowerCase().contains('network') ||
-        generalErrorMessage.toLowerCase().contains('socket') ||
-        generalErrorMessage.toLowerCase().contains('failed host lookup')) {
+    // Manejo para otros tipos de errores (no AuthException)
+    String errorMessage = error.toString().toLowerCase();
+    if (errorMessage.contains('network request failed') ||
+        errorMessage.contains('failed host lookup') ||
+        errorMessage.contains('socketexception') ||
+        errorMessage.contains('handshake failed') ||
+        errorMessage.contains('connection timed out')) {
       return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
     }
-    return generalErrorMessage.isNotEmpty ? generalErrorMessage : 'Ha ocurrido un error desconocido.';
+
+    return 'Ha ocurrido un error desconocido durante el registro. Por favor, inténtalo más tarde.';
   }
+
 
   /// _signUp: Intenta registrar un nuevo usuario con el email y contraseña proporcionados.
   ///

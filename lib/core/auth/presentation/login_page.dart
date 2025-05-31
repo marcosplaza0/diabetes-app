@@ -80,45 +80,34 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// _processErrorMessage: Procesa un error (generalmente una AuthException) y devuelve un mensaje amigable para el usuario.
-  ///
-  /// Traduce mensajes comunes de error de Supabase Auth a español y maneja errores de red.
-  ///
-  /// @param error El objeto de error capturado.
-  /// @return Un String con el mensaje de error formateado para el usuario.
   String _processErrorMessage(dynamic error) {
-    if (error is supabase_auth.AuthException) { // Si el error es una AuthException de Supabase.
-      // Mapea mensajes de error comunes a mensajes más amigables en español.
-      switch (error.message.toLowerCase()) {
-        case 'invalid login credentials':
-          return 'Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos e inténtalo de nuevo.';
-        case 'email not confirmed':
-          return 'Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada para el enlace de confirmación.';
-        case 'user not found': // Aunque 'invalid login credentials' suele cubrir esto.
-          return 'No se encontró un usuario con ese correo electrónico.';
-        case 'network error': // Errores comunes de red.
-        case 'failed to fetch':
-          return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
-        default:
-        // Si el mensaje de error de Supabase es útil, se muestra; sino, un mensaje genérico.
-          return error.message.isNotEmpty ? error.message : 'Ocurrió un error de autenticación.';
+    if (error is supabase_auth.AuthException) {
+      String message = error.message.toLowerCase();
+      if (message.contains('invalid login credentials')) {
+        return 'Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos e inténtalo de nuevo.';
+      } else if (message.contains('email not confirmed')) {
+        return 'Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada para el enlace de confirmación.';
+      } else if (message.contains('network request failed') || message.contains('Failed host lookup') || message.contains('socketexception')) {
+        return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
       }
+      // Para otros errores de AuthException, se podría mostrar un mensaje más genérico si error.message es muy técnico
+      // o si se desea ocultar detalles específicos de Supabase.
+      // Por ahora, si no es uno de los anteriores, se devuelve el mensaje original o uno genérico.
+      return error.message.isNotEmpty ? error.message : 'Ocurrió un error de autenticación.';
     }
 
-    // Para otros tipos de excepciones.
-    String errorMessage = error.toString();
-    if (errorMessage.startsWith("Exception: ")) { // Limpia el prefijo "Exception: ".
-      errorMessage = errorMessage.replaceFirst("Exception: ", "");
+    // Manejo para otros tipos de errores (no AuthException)
+    String errorMessage = error.toString().toLowerCase();
+    if (errorMessage.contains('network request failed') || // Términos comunes en errores de red
+        errorMessage.contains('failed host lookup') ||
+        errorMessage.contains('socketexception') ||
+        errorMessage.contains('handshake failed') ||
+        errorMessage.contains('connection timed out')) {
+      return 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
     }
 
-    // Detección genérica de errores de red.
-    if (errorMessage.toLowerCase().contains('network') ||
-        errorMessage.toLowerCase().contains('socket') ||
-        errorMessage.toLowerCase().contains('failed host lookup')) {
-      return 'Error de conexión. Verifica tu internet e inténtalo de nuevo.';
-    }
-
-    return errorMessage.isNotEmpty ? errorMessage : 'Ha ocurrido un error desconocido.';
+    // Si no es un error de red conocido ni una AuthException, se muestra un mensaje más genérico.
+    return 'Ha ocurrido un error inesperado. Por favor, inténtalo más tarde.';
   }
 
   /// _login: Intenta iniciar sesión con el email y contraseña proporcionados.

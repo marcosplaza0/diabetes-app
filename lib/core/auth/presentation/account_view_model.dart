@@ -167,9 +167,36 @@ class AccountViewModel extends ChangeNotifier {
       _setProcessing(false);
       return true; // Éxito.
     } catch (e) {
-      _setFeedback("Error al actualizar el perfil: ${e.toString()}", isError: true);
-      _setProcessing(false);
-      return false; // Fracaso.
+      String processedMessage;
+      if (e is PostgrestException) {
+        debugPrint("AccountViewModel: PostgrestException al actualizar perfil. Code: ${e.code}, Message: ${e.message}, Details: ${e.details}");
+        // Código '23505' es el código estándar de PostgreSQL para violación de unicidad (unique_violation) El usuario no es una PK pero no puede repetirse en la tabla.
+        if (e.code == '23505' ||
+            (e.message.toLowerCase().contains('duplicate key value violates unique constraint') &&
+                (e.message.toLowerCase().contains('profiles_username_key') || e.message.toLowerCase().contains('username')) ) ) {
+          processedMessage = "Error: El nombre de usuario '$userName' ya está en uso. Por favor, elige otro.";
+        } else if (e.message.toLowerCase().contains('network request failed') || e.message.toLowerCase().contains('failed host lookup')) {
+          processedMessage = 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
+        }
+        else {
+          processedMessage = "Error de base de datos al actualizar el perfil. Inténtalo más tarde.";
+        }
+      } else {
+        // Manejo para otros tipos de errores (no PostgrestException)
+        String errorMessage = e.toString().toLowerCase();
+        if (errorMessage.contains('network request failed') ||
+            errorMessage.contains('failed host lookup') ||
+            errorMessage.contains('socketexception') ||
+            errorMessage.contains('handshake failed') ||
+            errorMessage.contains('connection timed out')) {
+          processedMessage = 'Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
+        } else {
+          processedMessage = 'Ha ocurrido un error inesperado al actualizar el perfil.';
+        }
+      }
+      _setFeedback(processedMessage, isError: true);
+      _setProcessing(false); // Esto llamará a notifyListeners
+      return false;
     }
   }
 
