@@ -1,31 +1,42 @@
-// lib/core/layout/main_layout.dart
-// ignore_for_file: use_build_context_synchronously
+// Archivo: lib/core/layout/main_layout.dart
+// Descripción: Define el widget de diseño principal (MainLayout) que proporciona
+// una estructura consistente para las pantallas de la aplicación. Incluye una AppBar
+// con un título y un botón de cierre de sesión, y un Drawer (menú lateral) común.
+// También maneja la lógica de cierre de sesión, incluyendo un diálogo de confirmación
+// si hay datos locales sin sincronizar.
 
-import 'package:flutter/material.dart';
-import 'drawer/drawer_app.dart';
-// import 'package:diabetes_2/core/auth/auth_service.dart'; // AuthService no maneja la lógica de UI del diálogo
+// Importaciones del SDK de Flutter y paquetes de terceros
+import 'package:flutter/material.dart'; // Framework principal de Flutter para UI.
+import 'package:shared_preferences/shared_preferences.dart'; // Para leer/escribir preferencias (ej. guardado en nube).
+import 'package:hive_flutter/hive_flutter.dart'; // Para acceder a las cajas de Hive (logs).
 
-// NUEVAS IMPORTACIONES para la lógica de logout
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:diabetes_2/main.dart' show supabase, mealLogBoxName, overnightLogBoxName;
-import 'package:diabetes_2/data/models/logs/logs.dart';
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart';
+// Importaciones de archivos del proyecto
+import 'package:diabetes_2/core/layout/drawer/drawer_app.dart'; // Widget del Drawer de la aplicación.
+import 'package:diabetes_2/main.dart' show supabase, mealLogBoxName, overnightLogBoxName; // Cliente Supabase y nombres de cajas Hive.
+import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog para la lógica de logout.
+import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
 
-// Clave para SharedPreferences (debería ser global o importada)
+// Clave para SharedPreferences usada para la preferencia de guardado en la nube.
+// Debería ser consistente con la usada en otros lugares (ej. DrawerApp, ViewModels).
 const String cloudSavePreferenceKeyFromMainLayout = 'saveToCloudEnabled';
 
-// Enum para las acciones del diálogo de logout (puede estar en un archivo común)
+// Enum para las acciones del diálogo de confirmación de cierre de sesión.
+// Similar al LogoutPromptAction en DrawerApp, idealmente se unificarían.
 enum MainLayoutLogoutPromptAction {
-  uploadAndLogout,
-  logoutWithoutUploading,
-  cancel,
+  uploadAndLogout,         // Subir datos y luego cerrar sesión.
+  logoutWithoutUploading,  // Cerrar sesión sin subir datos.
+  cancel,                  // Cancelar la operación de cierre de sesión.
 }
 
 
+/// MainLayout: Un StatefulWidget que proporciona la estructura base para las pantallas.
+///
+/// Parámetros:
+/// - `title`: El título a mostrar en la AppBar.
+/// - `body`: El widget principal que se mostrará como contenido de la pantalla.
 class MainLayout extends StatefulWidget {
-  final String title;
-  final Widget body;
+  final String title; // Título de la AppBar.
+  final Widget body;  // Contenido principal de la pantalla.
 
   const MainLayout({
     super.key,
@@ -38,32 +49,37 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // final authService = AuthService(); // No es necesario para la lógica de UI del diálogo
-
-  // NUEVO: Estado para manejar el proceso de logout
+  // Estado para manejar el proceso de cierre de sesión desde la AppBar.
   bool _isProcessingLogoutMainLayout = false;
-  final SupabaseLogSyncService _logSyncServiceMainLayout = SupabaseLogSyncService();
+  // Instancia del servicio de sincronización de logs, usada si el usuario decide subir datos antes de desloguearse.
+  final SupabaseLogSyncService _logSyncServiceMainLayout = SupabaseLogSyncService(); //
 
 
-  // NUEVO: Método para manejar el proceso de logout con diálogo condicional
-  Future<void> _handleLogoutWithPrompt(BuildContext context) async { // Pasar BuildContext
-    if (_isProcessingLogoutMainLayout || !mounted) return;
+  /// _handleLogoutWithPrompt: Gestiona el proceso de cierre de sesión, mostrando un diálogo de confirmación
+  /// si es necesario (similar a la lógica en DrawerApp).
+  ///
+  /// @param context El BuildContext actual, necesario para mostrar el diálogo y SnackBars.
+  Future<void> _handleLogoutWithPrompt(BuildContext context) async {
+    if (_isProcessingLogoutMainLayout || !mounted) return; // Evita múltiples llamadas o si el widget no está montado.
 
     final prefs = await SharedPreferences.getInstance();
+    // Verifica si el guardado en la nube está habilitado y si hay datos locales.
     final bool cloudSaveCurrentlyEnabled = prefs.getBool(cloudSavePreferenceKeyFromMainLayout) ?? false;
 
-    final mealLogBox = Hive.box<MealLog>(mealLogBoxName);
-    final overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName);
+    final mealLogBox = Hive.box<MealLog>(mealLogBoxName); //
+    final overnightLogBox = Hive.box<OvernightLog>(overnightLogBoxName); //
     final bool hasLocalData = mealLogBox.isNotEmpty || overnightLogBox.isNotEmpty;
-    final bool isLoggedIn = supabase.auth.currentUser != null;
+    final bool isLoggedIn = supabase.auth.currentUser != null; //
 
-    MainLayoutLogoutPromptAction? userAction = MainLayoutLogoutPromptAction.logoutWithoutUploading;
+    MainLayoutLogoutPromptAction? userAction = MainLayoutLogoutPromptAction.logoutWithoutUploading; // Acción por defecto.
 
+    // Si el usuario está logueado, el guardado en nube está DESACTIVADO, y hay datos locales:
     if (isLoggedIn && !cloudSaveCurrentlyEnabled && hasLocalData) {
       if (!mounted) return;
+      // Muestra un diálogo al usuario.
       userAction = await showDialog<MainLayoutLogoutPromptAction>(
-        context: (!mounted) ? context: context, // Usar el context pasado
-        barrierDismissible: false,
+        context: context, // Usa el context pasado al método.
+        barrierDismissible: false, // No permitir cerrar tocando fuera.
         builder: (BuildContext dialogContext) {
           return AlertDialog(
             title: const Text('Datos Locales Sin Sincronizar'),
@@ -87,52 +103,56 @@ class _MainLayoutState extends State<MainLayout> {
       );
     }
 
-    if (!mounted || userAction == MainLayoutLogoutPromptAction.cancel) {
+    if (!mounted || userAction == MainLayoutLogoutPromptAction.cancel) { // Si el usuario cancela o el widget se desmonta.
       return;
     }
 
+    // Si el usuario elige subir datos.
     if (userAction == MainLayoutLogoutPromptAction.uploadAndLogout) {
       if (!mounted) return;
-      setState(() { _isProcessingLogoutMainLayout = true; });
+      setState(() { _isProcessingLogoutMainLayout = true; }); // Inicia estado de procesamiento.
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Subiendo datos a la nube...'), duration: Duration(seconds: 3)),
       );
 
-      int successCount = 0;
-      int errorCount = 0;
+      int successCount = 0; int errorCount = 0;
       try {
+        // Sincroniza MealLogs.
         for (var entry in mealLogBox.toMap().entries) {
           try {
-            await _logSyncServiceMainLayout.syncMealLog(entry.value, entry.key);
+            await _logSyncServiceMainLayout.syncMealLog(entry.value, entry.key); //
             successCount++;
           } catch (e) { errorCount++; }
         }
+        // Sincroniza OvernightLogs.
         for (var entry in overnightLogBox.toMap().entries) {
           try {
-            await _logSyncServiceMainLayout.syncOvernightLog(entry.value, entry.key);
+            await _logSyncServiceMainLayout.syncOvernightLog(entry.value, entry.key); //
             successCount++;
           } catch (e) { errorCount++; }
         }
-        if(mounted) {
+        if(mounted) { // Muestra feedback de la sincronización.
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Sincronización antes de logout completada. Éxitos: $successCount, Errores: $errorCount'), backgroundColor: errorCount > 0 ? Colors.orange : Colors.green),
           );
         }
-      } catch (e) {
+      } catch (e) { // Error general durante la sincronización.
         if(mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error al subir datos: ${e.toString()}'), backgroundColor: Colors.red),
           );
         }
-      } finally {
+      } finally { // Asegura que el estado de procesamiento se desactive.
         if (mounted) setState(() { _isProcessingLogoutMainLayout = false; });
       }
     }
 
+    // Procede a cerrar la sesión en Supabase.
     try {
-      await supabase.auth.signOut();
-      // La navegación es manejada por GoRouter redirect
+      await supabase.auth.signOut(); //
+      // La navegación a la pantalla de login es manejada por el redirect de GoRouter
+      // basado en el cambio de estado de autenticación.
     } catch (e) {
       debugPrint("Error signing out desde MainLayout: $e");
       if (mounted) {
@@ -141,38 +161,48 @@ class _MainLayoutState extends State<MainLayout> {
         );
       }
     }
+    // No es necesario setState para _isProcessingLogoutMainLayout aquí si la sincronización no se hizo,
+    // ya que ya estaría en false o se manejó en el bloque `finally` de la sincronización.
+    // Si `uploadAndLogout` no se ejecutó, `_isProcessingLogoutMainLayout` no se puso a true aquí.
+    // Podríamos asegurar que esté en false si es necesario, pero la lógica actual parece cubrirlo.
   }
 
 
   @override
+  /// build: Construye la interfaz de usuario del MainLayout.
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = Theme.of(context); // Obtiene el tema actual.
 
     return Scaffold(
+      // AppBar: Barra superior de la aplicación.
       appBar: AppBar(
-        title: Text(widget.title),
-        centerTitle: true,
-        shadowColor: theme.colorScheme.shadow,
-        elevation: 5,
-        actions: [
-          if (_isProcessingLogoutMainLayout) // Mostrar loader en lugar del botón si se está procesando
-            const Padding(
+        title: Text(widget.title), // Título de la pantalla, pasado como parámetro.
+        centerTitle: true, // Centra el título en la AppBar.
+        shadowColor: theme.colorScheme.shadow, // Color de la sombra de la AppBar.
+        elevation: 5, // Elevación de la AppBar.
+        actions: [ // Acciones a la derecha de la AppBar.
+          // Muestra un indicador de progreso o el botón de logout.
+          if (_isProcessingLogoutMainLayout)
+            const Padding( // Indicador de progreso si se está cerrando sesión.
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))),
             )
           else
+          // Botón de IconButton para cerrar sesión.
             IconButton(
-              onPressed: () => _handleLogoutWithPrompt(context), // Llamar al nuevo método
+              onPressed: () => _handleLogoutWithPrompt(context), // Llama al método de logout.
               icon: Icon(
                 Icons.logout,
-                color: theme.colorScheme.error,
+                color: theme.colorScheme.error, // Color de error para el icono de logout.
               ),
-              tooltip: 'Cerrar Sesión',
+              tooltip: 'Cerrar Sesión', // Texto de ayuda al mantener presionado.
             )
         ],
       ),
+      // Body: Contenido principal de la pantalla, pasado como parámetro.
       body: widget.body,
-      drawer: const DrawerApp(),
+      // Drawer: Menú lateral de la aplicación.
+      drawer: const DrawerApp(), //
     );
   }
 }

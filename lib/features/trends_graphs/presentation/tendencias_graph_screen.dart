@@ -245,19 +245,16 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
             // ... (el Row con _buildDaysSelector y el IconButton de refrescar se mantiene igual)
             Padding(
               padding: const EdgeInsets.only(bottom: 6.0, left: 4, right: 4),
-              child: Container(
-                // ...
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(children: [_buildDaysSelector(context, viewModel, theme), const SizedBox(width: 10), Text("Registros", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600))]),
-                    IconButton(
-                      icon: Icon(Icons.refresh_rounded, color: theme.colorScheme.primary, size: 26),
-                      onPressed: viewModel.isLoading ? null : () => viewModel.loadChartData(themeDataForDots: theme),
-                      tooltip: 'Recargar datos',
-                    )
-                  ],
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(children: [_buildDaysSelector(context, viewModel, theme), const SizedBox(width: 10), Text("Registros", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600))]),
+                  IconButton(
+                    icon: Icon(Icons.refresh_rounded, color: theme.colorScheme.primary, size: 26),
+                    onPressed: viewModel.isLoading ? null : () => viewModel.loadChartData(themeDataForDots: theme),
+                    tooltip: 'Recargar datos',
+                  )
+                ],
               ),
             ),
             if (!viewModel.isLoading) _buildLegend(context, viewModel, theme), // Se mantiene
