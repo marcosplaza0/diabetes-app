@@ -10,10 +10,10 @@ import 'package:flutter/foundation.dart'; // Para ChangeNotifier y utilidades de
 import 'package:collection/collection.dart'; // Para extensiones de colecciones como .average y .averageOrNull.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelo MealLog.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para acceder a los logs.
-import 'package:diabetes_2/data/repositories/calculation_data_repository.dart'; // Repositorio para acceder a los datos de cálculo.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelo MealLog.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Repositorio para acceder a los logs.
+import 'package:DiabetiApp/data/repositories/calculation_data_repository.dart'; // Repositorio para acceder a los datos de cálculo.
 
 // Definiciones relacionadas con las opciones de rango de fechas.
 // Podrían moverse a un archivo de utilidades o modelos si se usan en más lugares.

@@ -10,10 +10,10 @@ import 'package:hive/hive.dart'; // Para interactuar con la base de datos local 
 import 'package:shared_preferences/shared_preferences.dart'; // Para leer preferencias compartidas (ej. si el guardado en nube está activo).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
-import 'package:diabetes_2/data/repositories/calculation_data_repository.dart'; // Interfaz que esta clase implementa.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
-import 'package:diabetes_2/main.dart' show supabase; // Para acceder a `supabase.auth.currentUser` y verificar el estado de login.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
+import 'package:DiabetiApp/data/repositories/calculation_data_repository.dart'; // Interfaz que esta clase implementa.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
+import 'package:DiabetiApp/main.dart' show supabase; // Para acceder a `supabase.auth.currentUser` y verificar el estado de login.
 
 // Constante para la clave de SharedPreferences que indica si el guardado en la nube está habilitado.
 // Sería ideal que esta constante estuviera definida en un lugar central si se usa en múltiples repositorios o servicios.

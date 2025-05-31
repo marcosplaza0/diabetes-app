@@ -10,10 +10,10 @@ import 'package:hive/hive.dart'; // Para interactuar con la base de datos local 
 import 'package:shared_preferences/shared_preferences.dart'; // Para leer preferencias compartidas.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/main.dart' show supabase; // Para acceder a `supabase.auth.currentUser` y verificar estado de login.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Interfaz que esta clase implementa.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
+import 'package:DiabetiApp/main.dart' show supabase; // Para acceder a `supabase.auth.currentUser` y verificar estado de login.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Interfaz que esta clase implementa.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
 
 // Constante para la clave de SharedPreferences que indica si el guardado en la nube está habilitado.
 // Es importante que esta clave sea consistente dondequiera que se use.

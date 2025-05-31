@@ -1,4 +1,4 @@
-package com.marcos.diabetes_2
+package com.marcos.DiabetiApp
 
 import io.flutter.embedding.android.FlutterActivity
 

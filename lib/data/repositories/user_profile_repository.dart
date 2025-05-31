@@ -9,7 +9,7 @@
 import 'package:flutter/foundation.dart'; // Para Uint8List, usado para los bytes del avatar.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Modelo UserProfileData.
+import 'package:DiabetiApp/data/models/profile/user_profile_data.dart'; // Modelo UserProfileData.
 
 /// UserProfileRepository: Clase abstracta que define el contrato para el repositorio de perfil de usuario.
 ///

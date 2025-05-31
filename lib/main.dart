@@ -15,35 +15,35 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // Para la integración
 import 'package:shared_preferences/shared_preferences.dart'; // Para almacenamiento simple de clave-valor
 
 // Importaciones de configuración y utilidades del proyecto
-import 'package:diabetes_2/core/utils/go_router.dart'; // Configuración de rutas de navegación
-import 'package:diabetes_2/core/theme/app_colors.dart'; // Define los temas claro y oscuro (AppTheme)
-import 'package:diabetes_2/core/theme/theme_provider.dart'; // Gestor del tema actual (claro/oscuro/sistema)
+import 'package:DiabetiApp/core/utils/go_router.dart'; // Configuración de rutas de navegación
+import 'package:DiabetiApp/core/theme/app_colors.dart'; // Define los temas claro y oscuro (AppTheme)
+import 'package:DiabetiApp/core/theme/theme_provider.dart'; // Gestor del tema actual (claro/oscuro/sistema)
 
 // Importaciones de modelos de datos de la aplicación
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos para registros de comida y noche
-import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Modelo para datos del perfil de usuario
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo para cálculos diarios
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos para registros de comida y noche
+import 'package:DiabetiApp/data/models/profile/user_profile_data.dart'; // Modelo para datos del perfil de usuario
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo para cálculos diarios
 
 // Importaciones de servicios de la aplicación
-import 'package:diabetes_2/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes
-import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos relacionados con la diabetes
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase
+import 'package:DiabetiApp/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes
+import 'package:DiabetiApp/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos relacionados con la diabetes
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase
 
 // Importaciones de repositorios (abstracciones para el acceso a datos)
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Interfaz del repositorio de logs
-import 'package:diabetes_2/data/repositories/log_repository_impl.dart'; // Implementación del repositorio de logs
-import 'package:diabetes_2/data/repositories/calculation_data_repository.dart'; // Interfaz del repositorio de datos de cálculo
-import 'package:diabetes_2/data/repositories/calculation_data_repository_impl.dart'; // Implementación del repositorio de datos de cálculo
-import 'package:diabetes_2/data/repositories/user_profile_repository.dart'; // Interfaz del repositorio de perfil de usuario
-import 'package:diabetes_2/data/repositories/user_profile_repository_impl.dart'; // Implementación del repositorio de perfil de usuario
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Interfaz del repositorio de logs
+import 'package:DiabetiApp/data/repositories/log_repository_impl.dart'; // Implementación del repositorio de logs
+import 'package:DiabetiApp/data/repositories/calculation_data_repository.dart'; // Interfaz del repositorio de datos de cálculo
+import 'package:DiabetiApp/data/repositories/calculation_data_repository_impl.dart'; // Implementación del repositorio de datos de cálculo
+import 'package:DiabetiApp/data/repositories/user_profile_repository.dart'; // Interfaz del repositorio de perfil de usuario
+import 'package:DiabetiApp/data/repositories/user_profile_repository_impl.dart'; // Implementación del repositorio de perfil de usuario
 
 // Importaciones de ViewModels para las diferentes features/pantallas
-import 'package:diabetes_2/features/food_injections/presentation/food_injections_view_model.dart'; // VM para la calculadora de dosis
-import 'package:diabetes_2/features/notes/presentation/diabetes_log_view_model.dart'; // VM para la pantalla de registro de notas
-import 'package:diabetes_2/features/trends/presentation/trends_view_model.dart'; // VM para la pantalla de resumen de tendencias
-import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // VM para los gráficos de tendencias
-import 'package:diabetes_2/features/settings/presentation/settings_view_model.dart'; // VM para la pantalla de ajustes
-import 'package:diabetes_2/core/auth/presentation/account_view_model.dart'; // VM para la pantalla de gestión de cuenta
+import 'package:DiabetiApp/features/food_injections/presentation/food_injections_view_model.dart'; // VM para la calculadora de dosis
+import 'package:DiabetiApp/features/notes/presentation/diabetes_log_view_model.dart'; // VM para la pantalla de registro de notas
+import 'package:DiabetiApp/features/trends/presentation/trends_view_model.dart'; // VM para la pantalla de resumen de tendencias
+import 'package:DiabetiApp/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // VM para los gráficos de tendencias
+import 'package:DiabetiApp/features/settings/presentation/settings_view_model.dart'; // VM para la pantalla de ajustes
+import 'package:DiabetiApp/core/auth/presentation/account_view_model.dart'; // VM para la pantalla de gestión de cuenta
 
 // Constantes para los nombres de las cajas de Hive (almacenamiento local)
 // Estas constantes aseguran que los nombres de las cajas sean consistentes a lo largo de la app.

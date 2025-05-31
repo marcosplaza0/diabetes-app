@@ -13,11 +13,11 @@ import 'package:intl/intl.dart'; // Para formateo de fechas y horas (ej. en tool
 import 'package:provider/provider.dart'; // Para acceder al TendenciasGraphViewModel.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelo MealLog, usado para la información en tooltips.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart' show DayPeriod; // Enum DayPeriod.
-import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // ViewModel para esta pantalla.
-import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelo MealLog, usado para la información en tooltips.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart' show DayPeriod; // Enum DayPeriod.
+import 'package:DiabetiApp/features/trends_graphs/presentation/tendencias_graph_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
 
 
 /// TendenciasGraphScreen: Un StatefulWidget que construye la UI para los gráficos de tendencias de glucemia.

@@ -10,10 +10,10 @@ import 'package:flutter/material.dart' hide DayPeriod; // Framework de UI de Flu
 import 'package:intl/intl.dart'; // Para formateo de fechas (ej. 'yyyy-MM-dd' para claves de DailyCalculationData).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData y enum DayPeriod.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para acceder a los logs.
-import 'package:diabetes_2/data/repositories/calculation_data_repository.dart'; // Repositorio para acceder a los datos de cálculo.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData y enum DayPeriod.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Repositorio para acceder a los logs.
+import 'package:DiabetiApp/data/repositories/calculation_data_repository.dart'; // Repositorio para acceder a los datos de cálculo.
 
 /// DiabetesCalculatorService: Clase de servicio para realizar diversos cálculos
 /// relacionados con el manejo de la diabetes.

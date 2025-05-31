@@ -11,8 +11,8 @@ import 'package:go_router/go_router.dart'; // Para la navegación (ej. a la pant
 import 'package:provider/provider.dart'; // Para acceder al SettingsViewModel.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/features/settings/presentation/settings_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/features/settings/presentation/settings_view_model.dart'; // ViewModel para esta pantalla.
 
 /// SettingsScreen: Un StatelessWidget que construye la UI para la pantalla de Ajustes.
 ///

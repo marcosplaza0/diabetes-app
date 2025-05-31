@@ -12,11 +12,11 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // Para SupabaseClient,
 import 'package:shared_preferences/shared_preferences.dart'; // Para SharedPreferences en la lógica de logout.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/repositories/user_profile_repository.dart'; // Repositorio para operaciones del perfil de usuario.
-import 'package:diabetes_2/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes (avatar).
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog, para la sincronización en logout.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Nombres de las cajas de Hive para logs.
+import 'package:DiabetiApp/data/repositories/user_profile_repository.dart'; // Repositorio para operaciones del perfil de usuario.
+import 'package:DiabetiApp/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes (avatar).
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog, para la sincronización en logout.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
+import 'package:DiabetiApp/main.dart' show mealLogBoxName, overnightLogBoxName; // Nombres de las cajas de Hive para logs.
 
 // Enum para las acciones del diálogo de confirmación de cierre de sesión.
 // Podría estar en un archivo de utilidades de la feature si se usa en más lugares.

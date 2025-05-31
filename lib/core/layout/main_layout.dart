@@ -11,10 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart'; // Para leer/escrib
 import 'package:hive_flutter/hive_flutter.dart'; // Para acceder a las cajas de Hive (logs).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/drawer/drawer_app.dart'; // Widget del Drawer de la aplicación.
-import 'package:diabetes_2/main.dart' show supabase, mealLogBoxName, overnightLogBoxName; // Cliente Supabase y nombres de cajas Hive.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog para la lógica de logout.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
+import 'package:DiabetiApp/core/layout/drawer/drawer_app.dart'; // Widget del Drawer de la aplicación.
+import 'package:DiabetiApp/main.dart' show supabase, mealLogBoxName, overnightLogBoxName; // Cliente Supabase y nombres de cajas Hive.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog para la lógica de logout.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
 
 // Clave para SharedPreferences usada para la preferencia de guardado en la nube.
 // Debería ser consistente con la usada en otros lugares (ej. DrawerApp, ViewModels).

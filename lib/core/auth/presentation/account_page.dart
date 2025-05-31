@@ -10,8 +10,8 @@ import 'package:provider/provider.dart'; // Para acceder al AccountViewModel.
 import 'package:go_router/go_router.dart'; // Para la navegación (ej. después de cerrar sesión).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/drawer/avatar.dart'; // Widget para mostrar y actualizar el avatar.
-import 'package:diabetes_2/core/auth/presentation/account_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/layout/drawer/avatar.dart'; // Widget para mostrar y actualizar el avatar.
+import 'package:DiabetiApp/core/auth/presentation/account_view_model.dart'; // ViewModel para esta pantalla.
 
 /// AccountPage: Un StatefulWidget que construye la UI para la pantalla de cuenta.
 ///

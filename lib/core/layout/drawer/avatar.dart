@@ -10,8 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // Para interactuar con
 import 'package:provider/provider.dart'; // Para acceder a ImageCacheService mediante Provider.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/main.dart' show supabase, ContextExtension; // Acceso global al cliente de Supabase.
-import 'package:diabetes_2/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes.
+import 'package:DiabetiApp/main.dart' show supabase, ContextExtension; // Acceso global al cliente de Supabase.
+import 'package:DiabetiApp/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes.
 
 /// Avatar: Un StatefulWidget que muestra la imagen de perfil del usuario y un botón para subir una nueva.
 ///

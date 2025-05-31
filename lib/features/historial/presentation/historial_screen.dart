@@ -9,9 +9,9 @@ import 'package:flutter/material.dart'; // Framework principal de Flutter para U
 import 'package:intl/date_symbol_data_local.dart'; // Necesario para inicializar el formato de fecha localizado (ej. 'es_ES').
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/features/historial/widgets/date_navigator_widget.dart'; // Widget para la navegación entre fechas.
-import 'package:diabetes_2/features/historial/widgets/daily_log_list_widget.dart'; // Widget para mostrar la lista de logs diarios.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/features/historial/widgets/date_navigator_widget.dart'; // Widget para la navegación entre fechas.
+import 'package:DiabetiApp/features/historial/widgets/daily_log_list_widget.dart'; // Widget para mostrar la lista de logs diarios.
 
 /// HistorialScreen: Un StatefulWidget que representa la pantalla de historial.
 ///

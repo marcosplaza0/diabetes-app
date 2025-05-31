@@ -14,12 +14,12 @@ import 'package:uuid/uuid.dart'; // Para generar identificadores únicos para nu
 import 'package:shared_preferences/shared_preferences.dart'; // Para leer la preferencia de guardado en la nube.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para operaciones con logs.
-import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos de diabetes.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
-import 'package:diabetes_2/main.dart' show supabase; // Para cliente Supabase y nombre de caja.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Repositorio para operaciones con logs.
+import 'package:DiabetiApp/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos de diabetes.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
+import 'package:DiabetiApp/main.dart' show supabase; // Para cliente Supabase y nombre de caja.
 
 /// Enum LogType: Define los tipos de registros que se pueden crear o editar.
 enum LogType {

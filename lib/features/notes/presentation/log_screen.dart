@@ -11,8 +11,8 @@ import 'package:intl/intl.dart'; // Para formateo de fechas (ej. DateFormat.yMMM
 import 'package:provider/provider.dart'; // Para acceder al DiabetesLogViewModel.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/features/notes/presentation/diabetes_log_view_model.dart'; // ViewModel para esta pantalla.
-import 'package:diabetes_2/core/widgets/custom_numeric_text_field.dart'; // Widget personalizado para campos de entrada numéricos.
+import 'package:DiabetiApp/features/notes/presentation/diabetes_log_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/widgets/custom_numeric_text_field.dart'; // Widget personalizado para campos de entrada numéricos.
 
 // Constantes de estilo para la UI.
 // Podrían moverse a un archivo de constantes de UI si se usan en múltiples lugares.

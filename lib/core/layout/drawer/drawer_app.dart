@@ -16,13 +16,13 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // Para Supabase (AuthC
 import 'package:shared_preferences/shared_preferences.dart'; // Para leer SharedPreferences (ej. preferencia de guardado en nube).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/repositories/user_profile_repository.dart'; // Repositorio para obtener datos del perfil.
-import 'package:diabetes_2/core/utils/icon_helper.dart'; // Utilidad para obtener iconos por nombre.
-import 'package:diabetes_2/main.dart' show supabase, mealLogBoxName, overnightLogBoxName; // Cliente Supabase y nombres de cajas.
-import 'package:diabetes_2/core/layout/drawer/drawer_loader.dart'; // Para cargar los items del drawer desde JSON.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog, para la lógica de logout.
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs.
-import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga/vacío/error.
+import 'package:DiabetiApp/data/repositories/user_profile_repository.dart'; // Repositorio para obtener datos del perfil.
+import 'package:DiabetiApp/core/utils/icon_helper.dart'; // Utilidad para obtener iconos por nombre.
+import 'package:DiabetiApp/main.dart' show supabase, mealLogBoxName, overnightLogBoxName; // Cliente Supabase y nombres de cajas.
+import 'package:DiabetiApp/core/layout/drawer/drawer_loader.dart'; // Para cargar los items del drawer desde JSON.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog, para la lógica de logout.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs.
+import 'package:DiabetiApp/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga/vacío/error.
 
 // Clave para SharedPreferences usada en la lógica de logout para determinar si el guardado en nube está activo.
 const String cloudSavePreferenceKey = 'saveToCloudEnabled';

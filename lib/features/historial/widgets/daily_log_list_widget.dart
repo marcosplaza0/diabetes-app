@@ -11,10 +11,10 @@ import 'package:go_router/go_router.dart'; // Para la navegación (ej. al editar
 import 'package:provider/provider.dart'; // Para acceder al LogRepository inyectado.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
-import 'package:diabetes_2/main.dart' show mealLogBoxName, overnightLogBoxName; // Nombres de las cajas de Hive.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Interfaz del repositorio de logs.
-import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/main.dart' show mealLogBoxName, overnightLogBoxName; // Nombres de las cajas de Hive.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Interfaz del repositorio de logs.
+import 'package:DiabetiApp/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
 
 /// DailyLogListWidget: Un StatefulWidget que muestra los registros de un día específico.
 ///

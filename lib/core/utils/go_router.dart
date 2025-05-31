@@ -11,18 +11,18 @@ import 'package:go_router/go_router.dart'; // Paquete para la gestión de rutas 
 import 'package:supabase_flutter/supabase_flutter.dart'; // Para SupabaseClient y escuchar cambios de autenticación.
 
 // Importaciones de las diferentes pantallas/páginas de la aplicación a las que se puede navegar.
-import 'package:diabetes_2/features/home/presentation/home_screen.dart';
-import 'package:diabetes_2/features/historial/presentation/historial_screen.dart';
-import 'package:diabetes_2/features/food_injections/presentation/food_injections_screen.dart';
-import 'package:diabetes_2/features/notes/presentation/log_screen.dart'; // Pantalla para crear/editar logs.
-import 'package:diabetes_2/features/settings/presentation/settings_screen.dart';
-import 'package:diabetes_2/features/trends_graphs/presentation/tendencias_graph_screen.dart';
-import 'package:diabetes_2/features/trends/presentation/tendencias_screen.dart';
+import 'package:DiabetiApp/features/home/presentation/home_screen.dart';
+import 'package:DiabetiApp/features/historial/presentation/historial_screen.dart';
+import 'package:DiabetiApp/features/food_injections/presentation/food_injections_screen.dart';
+import 'package:DiabetiApp/features/notes/presentation/log_screen.dart'; // Pantalla para crear/editar logs.
+import 'package:DiabetiApp/features/settings/presentation/settings_screen.dart';
+import 'package:DiabetiApp/features/trends_graphs/presentation/tendencias_graph_screen.dart';
+import 'package:DiabetiApp/features/trends/presentation/tendencias_screen.dart';
 
 // Core (Autenticación y Cuenta):
-import 'package:diabetes_2/core/auth/presentation/login_page.dart';
-import 'package:diabetes_2/core/auth/presentation/register_page.dart';
-import 'package:diabetes_2/core/auth/presentation/account_page.dart'; // Pantalla de gestión de cuenta/perfil.
+import 'package:DiabetiApp/core/auth/presentation/login_page.dart';
+import 'package:DiabetiApp/core/auth/presentation/register_page.dart';
+import 'package:DiabetiApp/core/auth/presentation/account_page.dart'; // Pantalla de gestión de cuenta/perfil.
 
 /// GoRouterUtils: Clase de utilidad que encapsula la configuración de GoRouter.
 ///

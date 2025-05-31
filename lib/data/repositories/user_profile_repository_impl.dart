@@ -10,9 +10,9 @@ import 'package:hive/hive.dart'; // Para interactuar con la base de datos local 
 import 'package:supabase_flutter/supabase_flutter.dart'; // Para SupabaseClient y operaciones de autenticación/base de datos.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Modelo UserProfileData.
-import 'package:diabetes_2/data/repositories/user_profile_repository.dart'; // Interfaz que esta clase implementa.
-import 'package:diabetes_2/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes del avatar.
+import 'package:DiabetiApp/data/models/profile/user_profile_data.dart'; // Modelo UserProfileData.
+import 'package:DiabetiApp/data/repositories/user_profile_repository.dart'; // Interfaz que esta clase implementa.
+import 'package:DiabetiApp/core/services/image_cache_service.dart'; // Servicio para la caché de imágenes del avatar.
 
 /// UserProfileRepositoryImpl: Implementación de `UserProfileRepository`.
 ///

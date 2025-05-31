@@ -9,8 +9,8 @@
 import 'package:flutter/material.dart' hide DayPeriod; // Se oculta DayPeriod de Material si existe conflicto con el DayPeriod propio.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos relacionados con la diabetes.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart' show DayPeriod, dayPeriodToString; // Enum DayPeriod y helper para convertirlo a String.
+import 'package:DiabetiApp/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos relacionados con la diabetes.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart' show DayPeriod, dayPeriodToString; // Enum DayPeriod y helper para convertirlo a String.
 
 /// Enum CalculationMode: Define los diferentes modos de cálculo disponibles en la pantalla.
 enum CalculationMode {

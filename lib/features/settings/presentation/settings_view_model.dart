@@ -11,9 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart'; // Para almacenar p
 import 'package:supabase_flutter/supabase_flutter.dart'; // Para acceder al cliente de Supabase, especialmente `Supabase.instance.client.auth`.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para operaciones con logs (locales).
-import 'package:diabetes_2/core/theme/theme_provider.dart'; // Proveedor para gestionar el tema de la aplicación.
+import 'package:DiabetiApp/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar logs con Supabase.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Repositorio para operaciones con logs (locales).
+import 'package:DiabetiApp/core/theme/theme_provider.dart'; // Proveedor para gestionar el tema de la aplicación.
 
 // Enums y funciones helper para las opciones de configuración.
 // Estos podrían moverse a un archivo de utilidades de esta feature si se vuelven más complejos o se usan en otros lugares.

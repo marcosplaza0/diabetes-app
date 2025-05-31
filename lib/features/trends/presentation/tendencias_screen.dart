@@ -11,10 +11,10 @@ import 'package:fl_chart/fl_chart.dart'; // Para PieChartSectionData, usado en e
 import 'package:provider/provider.dart'; // Para acceder al TrendsViewModel.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/features/trends/presentation/trends_view_model.dart'; // ViewModel para esta pantalla.
-import 'package:diabetes_2/core/widgets/summary_stat_card.dart'; // Widget para mostrar estadísticas en tarjetas.
-import 'package:diabetes_2/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/features/trends/presentation/trends_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/widgets/summary_stat_card.dart'; // Widget para mostrar estadísticas en tarjetas.
+import 'package:DiabetiApp/core/widgets/loading_or_empty_state_widget.dart'; // Widget para estados de carga, vacío o error.
 
 /// TrendsScreen: Un StatelessWidget que construye la UI para la pantalla de Resumen de Tendencias.
 ///

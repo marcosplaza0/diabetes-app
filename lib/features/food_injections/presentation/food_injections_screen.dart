@@ -10,8 +10,8 @@ import 'package:flutter/services.dart'; // Para TextInputFormatter (formateadore
 import 'package:provider/provider.dart'; // Para la gestión de estado y acceso al ViewModel.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/features/food_injections/presentation/food_injections_view_model.dart'; // ViewModel para esta pantalla.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/features/food_injections/presentation/food_injections_view_model.dart'; // ViewModel para esta pantalla.
 
 /// FoodInjectionsScreen: Un StatelessWidget que construye la UI para la calculadora de dosis.
 ///

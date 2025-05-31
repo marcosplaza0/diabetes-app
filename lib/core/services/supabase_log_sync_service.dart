@@ -10,8 +10,8 @@ import 'package:flutter/foundation.dart'; // Para debugPrint.
 import 'package:intl/intl.dart'; // Para formateo de fechas (ej. para DailyCalculationData).
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
 
 /// SyncedLog: Clase genérica para envolver un log junto con su clave de Hive.
 ///

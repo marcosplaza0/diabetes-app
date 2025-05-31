@@ -11,11 +11,11 @@ import 'package:hive_flutter/hive_flutter.dart'; // Para ValueListenableBuilder,
 import 'package:intl/intl.dart'; // Para formateo de fechas y horas.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
-import 'package:diabetes_2/features/home/widgets/recent_logs_widget.dart'; // Widget para mostrar registros recientes.
-import 'package:diabetes_2/features/home/widgets/current_insulin_needs_widget.dart'; // Widget para estimar necesidades de insulina.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelo MealLog, usado por LastGlucoseReadingWidget.
-import 'package:diabetes_2/main.dart' show mealLogBoxName; // Nombre de la caja de Hive para MealLog.
+import 'package:DiabetiApp/core/layout/main_layout.dart'; // Widget de diseño principal de la pantalla.
+import 'package:DiabetiApp/features/home/widgets/recent_logs_widget.dart'; // Widget para mostrar registros recientes.
+import 'package:DiabetiApp/features/home/widgets/current_insulin_needs_widget.dart'; // Widget para estimar necesidades de insulina.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelo MealLog, usado por LastGlucoseReadingWidget.
+import 'package:DiabetiApp/main.dart' show mealLogBoxName; // Nombre de la caja de Hive para MealLog.
 
 /// HomeScreen: Un StatelessWidget que construye la interfaz de la pantalla de inicio.
 ///

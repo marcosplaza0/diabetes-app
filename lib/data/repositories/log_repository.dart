@@ -5,7 +5,7 @@
 // el acceso y la manipulación de los objetos MealLog y OvernightLog.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelos MealLog y OvernightLog.
 
 /// LogRepository: Clase abstracta que define el contrato para el repositorio de logs.
 ///

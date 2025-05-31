@@ -14,10 +14,10 @@ import 'package:fl_chart/fl_chart.dart'; // Biblioteca para la creación de grá
 import 'package:collection/collection.dart'; // Para extensiones de colecciones como .sortedBy.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelo MealLog.
-import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para determinar el período del día.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart' show DayPeriod; // Enum DayPeriod.
-import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para acceder a los MealLogs.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelo MealLog.
+import 'package:DiabetiApp/core/services/diabetes_calculator_service.dart'; // Servicio para determinar el período del día.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart' show DayPeriod; // Enum DayPeriod.
+import 'package:DiabetiApp/data/repositories/log_repository.dart'; // Repositorio para acceder a los MealLogs.
 
 /// TendenciasGraphViewModel: Gestiona el estado y la lógica para la pantalla de gráficos de tendencias.
 class TendenciasGraphViewModel extends ChangeNotifier {

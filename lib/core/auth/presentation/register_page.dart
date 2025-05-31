@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart'; // Para la navegación (ej. al inicia
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase_auth; // Para AuthException, usado en el manejo de errores.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/core/auth/auth_service.dart'; // Servicio de autenticación para interactuar con Supabase Auth.
+import 'package:DiabetiApp/core/auth/auth_service.dart'; // Servicio de autenticación para interactuar con Supabase Auth.
 
 /// RegisterPage: Un StatefulWidget que construye la UI para la pantalla de registro.
 ///

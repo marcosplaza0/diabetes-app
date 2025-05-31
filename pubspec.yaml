@@ -1,4 +1,4 @@
-name: diabetes_2
+name: DiabetiApp
 description: "Mi app de diabetes"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -51,6 +51,7 @@ dependencies:
   uuid: ^4.5.1
   collection: ^1.19.1
   fl_chart: ^0.68.0
+  flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
   flutter_test:
@@ -70,3 +71,8 @@ flutter:
   assets:
     - assets/drawer_config.json
 
+flutter_icons:
+  android: true
+  ios: true
+  linux: true
+  image_path: "assets/icon/app_icon.png"

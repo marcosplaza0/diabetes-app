@@ -5,7 +5,7 @@
 // para el acceso y la manipulación de los objetos DailyCalculationData.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart'; // Modelo DailyCalculationData.
 
 /// CalculationDataRepository: Clase abstracta que define el contrato para el repositorio de datos de cálculo.
 ///

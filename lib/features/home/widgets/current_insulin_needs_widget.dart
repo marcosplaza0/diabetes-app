@@ -9,11 +9,11 @@ import 'package:hive_flutter/hive_flutter.dart'; // Para ValueListenableBuilder 
 import 'package:provider/provider.dart'; // Para acceder a servicios inyectados, como DiabetesCalculatorService.
 
 // Importaciones de archivos del proyecto
-import 'package:diabetes_2/data/models/profile/user_profile_data.dart'; // Modelo para datos del perfil de usuario.
-import 'package:diabetes_2/main.dart' show supabase, userProfileBoxName, mealLogBoxName; // Para acceso a Supabase auth, nombres de cajas.
-import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos de diabetes.
-import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart' show DayPeriod, dayPeriodToString; // Enum DayPeriod y helper.
-import 'package:diabetes_2/data/models/logs/logs.dart'; // Modelo MealLog, para el listener de Hive.
+import 'package:DiabetiApp/data/models/profile/user_profile_data.dart'; // Modelo para datos del perfil de usuario.
+import 'package:DiabetiApp/main.dart' show supabase, userProfileBoxName, mealLogBoxName; // Para acceso a Supabase auth, nombres de cajas.
+import 'package:DiabetiApp/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos de diabetes.
+import 'package:DiabetiApp/data/models/calculations/daily_calculation_data.dart' show DayPeriod, dayPeriodToString; // Enum DayPeriod y helper.
+import 'package:DiabetiApp/data/models/logs/logs.dart'; // Modelo MealLog, para el listener de Hive.
 
 /// CurrentInsulinNeedsWidget: Un StatefulWidget que muestra la estimación de necesidades de insulina.
 ///
