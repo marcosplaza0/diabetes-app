@@ -56,14 +56,14 @@ class SummaryStatCard extends StatelessWidget {
         children: [
           // Muestra el icono si se proporcionó.
           if (icon != null) ...[
-            Icon(icon, color: onCardColor.withOpacity(0.8), size: 28), // Icono con opacidad y tamaño.
+            Icon(icon, color: onCardColor.withValues(alpha:0.8), size: 28), // Icono con opacidad y tamaño.
             const SizedBox(height: 8), // Espaciador.
           ],
           // Título de la estadística.
           Text(
             title,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: onCardColor.withOpacity(0.9), // Color del título con opacidad.
+              color: onCardColor.withValues(alpha:0.9), // Color del título con opacidad.
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1, // Evita que el título ocupe múltiples líneas.

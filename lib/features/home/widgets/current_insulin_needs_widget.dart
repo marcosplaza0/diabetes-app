@@ -196,7 +196,7 @@ class _CurrentInsulinNeedsWidgetState extends State<CurrentInsulinNeedsWidget> {
                           Text(_calculatedRatioPer10gCH!.toStringAsFixed(1), style: textTheme.displaySmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700)),
                           Padding(
                             padding: const EdgeInsets.only(left: 6.0),
-                            child: Text("U / 10g CH", style: textTheme.titleSmall?.copyWith(color: colorScheme.primary.withOpacity(0.9))),
+                            child: Text("U / 10g CH", style: textTheme.titleSmall?.copyWith(color: colorScheme.primary.withValues(alpha:0.9))),
                           ),
                         ]
                     ),
@@ -204,7 +204,7 @@ class _CurrentInsulinNeedsWidgetState extends State<CurrentInsulinNeedsWidget> {
                     if (_ratioSourceInfo.isNotEmpty)
                       Padding(
                           padding: const EdgeInsets.only(top: 6.0),
-                          child: Text(_ratioSourceInfo, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant.withOpacity(0.8)))
+                          child: Text(_ratioSourceInfo, style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant.withValues(alpha:0.8)))
                       ),
                   ]
               )
@@ -225,7 +225,7 @@ class _CurrentInsulinNeedsWidgetState extends State<CurrentInsulinNeedsWidget> {
                     Text(
                         _ratioSourceInfo, // Muestra la razón por la que no se pudo calcular (ej. falta de datos en períodos cercanos).
                         textAlign: TextAlign.center,
-                        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant.withOpacity(0.7))
+                        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant.withValues(alpha:0.7))
                     ),
                   ]
               ),

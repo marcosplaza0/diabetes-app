@@ -205,7 +205,7 @@ class TendenciasGraphViewModel extends ChangeNotifier {
       Color dotFillColor = getDotColor(spot.y);
       return FlDotCirclePainter(
         radius: 2.6, color: dotFillColor,
-        strokeColor: currentTheme.colorScheme.surfaceContainerLowest.withOpacity(0.8),
+        strokeColor: currentTheme.colorScheme.surfaceContainerLowest.withValues(alpha:0.8),
         strokeWidth: 1.0,
       );
     }

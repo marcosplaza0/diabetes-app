@@ -40,7 +40,7 @@ class _AvatarState extends State<Avatar> {
   final double avatarRadius = 75; // Radio del CircleAvatar.
   final double borderWidth = 2.0; // Ancho del borde alrededor del avatar.
   final double elevation = 4.0; // Elevación para la sombra del avatar.
-  final Color shadowColor = Colors.black.withOpacity(0.4); // Color de la sombra.
+  final Color shadowColor = Colors.black.withValues(alpha:0.4); // Color de la sombra.
 
   @override
   /// build: Construye la interfaz de usuario del widget Avatar.

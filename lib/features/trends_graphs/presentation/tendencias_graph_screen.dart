@@ -60,7 +60,7 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
       decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.7))
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha:0.7))
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
@@ -130,9 +130,9 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
             padding: const EdgeInsets.only(top: 16, bottom: 10, left: 8, right: 12),
             child: chartBars.isEmpty // Si no hay datos para este tramo.
                 ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.hourglass_empty_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5), size: 32),
+              Icon(Icons.hourglass_empty_rounded, color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.5), size: 32),
               const SizedBox(height: 8),
-              Text('Sin datos en este tramo horario', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7))),
+              Text('Sin datos en este tramo horario', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7))),
             ]))
                 : LineChart( // Widget LineChart.
               // Pasa los límites minY y maxY específicos.
@@ -171,7 +171,7 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
       lineTouchData: LineTouchData(
         enabled: true, handleBuiltInTouches: true,
         touchTooltipData: LineTouchTooltipData(
-          tooltipRoundedRadius: 10, getTooltipColor: (touchedSpot) => theme.colorScheme.secondaryContainer.withOpacity(0.92),
+          tooltipRoundedRadius: 10, getTooltipColor: (touchedSpot) => theme.colorScheme.secondaryContainer.withValues(alpha:0.92),
           getTooltipItems: (List<LineBarSpot> touchedBarSpots) { // Construye el contenido del tooltip.
             return touchedBarSpots.map((barSpot) {
               MealLog? sourceLog; // Log original asociado al punto tocado.
@@ -221,8 +221,8 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
       // Configuración de la cuadrícula.
       gridData: FlGridData(show: true, drawVerticalLine: true, drawHorizontalLine: true,
         horizontalInterval: intervalY, verticalInterval: intervalX,
-        getDrawingHorizontalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withOpacity(0.3), strokeWidth: 0.8),
-        getDrawingVerticalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withOpacity(0.3), strokeWidth: 0.8),
+        getDrawingHorizontalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withValues(alpha:0.3), strokeWidth: 0.8),
+        getDrawingVerticalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withValues(alpha:0.3), strokeWidth: 0.8),
       ),
       // Configuración de los títulos de los ejes.
       titlesData: FlTitlesData(
@@ -232,7 +232,7 @@ class _TendenciasGraphScreenState extends State<TendenciasGraphScreen> {
         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       // Borde del gráfico.
-      borderData: FlBorderData(show: true, border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5), width: 1)),
+      borderData: FlBorderData(show: true, border: Border.all(color: theme.colorScheme.outline.withValues(alpha:0.5), width: 1)),
       // Límites X e Y del gráfico. minY y maxY son ahora específicos de este gráfico.
       minX: minX, maxX: maxX, minY: minY, maxY: maxY,
       lineBarsData: chartBars, // Datos de las líneas.

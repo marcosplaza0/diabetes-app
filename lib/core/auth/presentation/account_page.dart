@@ -214,7 +214,7 @@ class _AccountPageState extends State<AccountPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Divider(height: 50, thickness: 1, indent: 20, endIndent: 20, color: colorScheme.outlineVariant.withOpacity(0.5)), // Separador visual.
+        Divider(height: 50, thickness: 1, indent: 20, endIndent: 20, color: colorScheme.outlineVariant.withValues(alpha:0.5)), // Separador visual.
         // Botón para Cerrar Sesión.
         TextButton.icon(
           icon: Icon(Icons.logout, color: colorScheme.error), // Icono de cerrar sesión.
@@ -284,7 +284,7 @@ class _AccountPageState extends State<AccountPage> {
           // Muestra un overlay de carga si el ViewModel está procesando una operación.
           if (viewModel.isProcessing) //
             Container(
-                color: colorScheme.scrim.withOpacity(0.3), // Fondo semi-transparente.
+                color: colorScheme.scrim.withValues(alpha:0.3), // Fondo semi-transparente.
                 child: const Center(child: CircularProgressIndicator()) // Indicador de progreso centrado.
             ),
         ]),

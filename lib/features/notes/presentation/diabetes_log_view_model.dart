@@ -19,7 +19,7 @@ import 'package:diabetes_2/data/models/calculations/daily_calculation_data.dart'
 import 'package:diabetes_2/data/repositories/log_repository.dart'; // Repositorio para operaciones con logs.
 import 'package:diabetes_2/core/services/diabetes_calculator_service.dart'; // Servicio para cálculos de diabetes.
 import 'package:diabetes_2/core/services/supabase_log_sync_service.dart'; // Servicio para sincronizar con Supabase.
-import 'package:diabetes_2/main.dart' show supabase, dailyCalculationsBoxName; // Para cliente Supabase y nombre de caja.
+import 'package:diabetes_2/main.dart' show supabase; // Para cliente Supabase y nombre de caja.
 
 /// Enum LogType: Define los tipos de registros que se pueden crear o editar.
 enum LogType {

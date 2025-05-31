@@ -222,10 +222,10 @@ class _RegisterPageState extends State<RegisterPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              colorScheme.primary.withOpacity(0.05),
+              colorScheme.primary.withValues(alpha:0.05),
               colorScheme.surface,
               colorScheme.surface,
-              colorScheme.secondary.withOpacity(0.05),
+              colorScheme.secondary.withValues(alpha:0.05),
             ],
             stops: const [0.0, 0.3, 0.7, 1.0],
           ),

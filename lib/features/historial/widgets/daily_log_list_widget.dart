@@ -76,7 +76,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
   /// @param theme El ThemeData actual para acceder a los colores del esquema.
   /// @return Un Color para el texto del valor de glucosa.
   Color _getGlucoseColor(double? bG, ThemeData theme) {
-    if (bG == null) return theme.colorScheme.onSurfaceVariant.withOpacity(0.7); // Color por defecto si es nulo.
+    if (bG == null) return theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7); // Color por defecto si es nulo.
     if (bG < 70) return theme.colorScheme.error; // Color para hipoglucemia.
     if (bG > 180) return Colors.red.shade700; // Color para hiperglucemia (ligeramente diferente del error).
     return Colors.green.shade600; // Color para glucosa en rango.
@@ -98,7 +98,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18.0, color: iconColor ?? theme.colorScheme.onSurfaceVariant.withOpacity(0.9)),
+          Icon(icon, size: 18.0, color: iconColor ?? theme.colorScheme.onSurfaceVariant.withValues(alpha:0.9)),
           const SizedBox(width: 10.0),
           Expanded(
               child: Text(
@@ -138,7 +138,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
         label,
         glucoseValue != null ? '${glucoseValue.toStringAsFixed(0)} mg/dL' : '-- mg/dL', // Formatea el valor.
         valueColor: glucoseColor, // Aplica el color al valor.
-        iconColor: glucoseColor.withOpacity(0.85) // Aplica una versión ligeramente transparente del color al icono.
+        iconColor: glucoseColor.withValues(alpha:0.85) // Aplica una versión ligeramente transparente del color al icono.
     );
   }
 
@@ -202,7 +202,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                     ),
                   ),
-                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)) // Indicador visual de edición.
+                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7)) // Indicador visual de edición.
                 ],
               ),
               const Divider(height: 20.0, thickness: 0.5), // Separador visual.
@@ -274,7 +274,7 @@ class _DailyLogListWidgetState extends State<DailyLogListWidget> {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                     ),
                   ),
-                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7))
+                  Icon(Icons.edit_note_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7))
                 ],
               ),
               const Divider(height: 20.0, thickness: 0.5),

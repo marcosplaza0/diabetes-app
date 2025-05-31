@@ -155,9 +155,9 @@ class TrendsScreen extends StatelessWidget {
 
     // Crea las secciones para el PieChart.
     List<PieChartSectionData> sections = [
-      PieChartSectionData(value: hypo, color: tirHypoColor, title: "${hypo.toStringAsFixed(0)}%", radius: 24, titleStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.onError, shadows: [Shadow(color: Colors.black.withOpacity(0.4), blurRadius: 1)])),
-      PieChartSectionData(value: inRange, color: tirInRangeColor, title: "${inRange.toStringAsFixed(0)}%", radius: 30, titleStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withOpacity(0.4), blurRadius: 1)])),
-      PieChartSectionData(value: hyper, color: tirHyperColor, title: "${hyper.toStringAsFixed(0)}%", radius: 24, titleStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withOpacity(0.4), blurRadius: 1)])),
+      PieChartSectionData(value: hypo, color: tirHypoColor, title: "${hypo.toStringAsFixed(0)}%", radius: 24, titleStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.onError, shadows: [Shadow(color: Colors.black.withValues(alpha:0.4), blurRadius: 1)])),
+      PieChartSectionData(value: inRange, color: tirInRangeColor, title: "${inRange.toStringAsFixed(0)}%", radius: 30, titleStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withValues(alpha:0.4), blurRadius: 1)])),
+      PieChartSectionData(value: hyper, color: tirHyperColor, title: "${hyper.toStringAsFixed(0)}%", radius: 24, titleStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withValues(alpha:0.4), blurRadius: 1)])),
     ];
     // Comprueba si hay datos para el gráfico.
     bool noDataForPie = hypo == 0 && inRange == 0 && hyper == 0 && summary.glucoseReadingsCount == 0; //
@@ -195,7 +195,7 @@ class TrendsScreen extends StatelessWidget {
             if (!noDataForPie)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: Text("Basado en ${summary.glucoseReadingsCount} lecturas", style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8), fontStyle: FontStyle.italic), textAlign: TextAlign.center,), //
+                child: Text("Basado en ${summary.glucoseReadingsCount} lecturas", style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.8), fontStyle: FontStyle.italic), textAlign: TextAlign.center,), //
               ),
           ],
         ),
@@ -256,7 +256,7 @@ class TrendsScreen extends StatelessWidget {
               Text(
                 "La HbA1c estimada es solo una aproximación y puede diferir de los resultados de laboratorio. Consulta siempre a tu médico.",
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.75), fontStyle: FontStyle.italic),
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.75), fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 24),
             ],

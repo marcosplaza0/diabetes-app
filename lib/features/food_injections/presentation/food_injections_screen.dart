@@ -176,7 +176,7 @@ class FoodInjectionsScreen extends StatelessWidget {
                   elevation: 2,
                   // Cambia el color de la tarjeta si el resultado es un error o indica falta de datos.
                   color: viewModel.resultText!.toLowerCase().contains("error") || viewModel.resultText!.toLowerCase().contains("no hay datos")
-                      ? theme.colorScheme.errorContainer.withOpacity(0.7)
+                      ? theme.colorScheme.errorContainer.withValues(alpha:0.7)
                       : theme.colorScheme.secondaryContainer,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),

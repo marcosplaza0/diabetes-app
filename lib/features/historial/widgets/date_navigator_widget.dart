@@ -159,7 +159,7 @@ class _DateNavigatorWidgetState extends State<DateNavigatorWidget> {
     final bool isAtLastDate = _isSameDay(_currentDate, widget.lastDate);
 
     return Material( // Envoltura con Material para asegurar que los InkWell y temas funcionen correctamente.
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), // Color de fondo sutil.
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha:0.5), // Color de fondo sutil.
       elevation: 0, // Sin elevación para una apariencia plana.
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),

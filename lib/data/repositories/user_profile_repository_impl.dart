@@ -111,7 +111,7 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
               avatarBytes ??= await _imageCacheService.downloadAndCacheImage(newCacheKey, supabaseAvatarUrl); //
               hiveProfile.avatarCacheKey = newCacheKey; //
             }
-          } else if (newCacheKey != null && avatarBytes == null) { // Si la clave es la misma pero no tenemos los bytes (ej. se limpió la caché de memoria).
+          } else if (newCacheKey != null) { // Si la clave es la misma pero no tenemos los bytes (ej. se limpió la caché de memoria).
             avatarBytes = await _imageCacheService.getImage(newCacheKey); //
           }
         } else {

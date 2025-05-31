@@ -96,7 +96,7 @@ class LoadingOrEmptyStateWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(errorIcon, size: 72, color: theme.colorScheme.error.withOpacity(0.7)), // Icono de error.
+              Icon(errorIcon, size: 72, color: theme.colorScheme.error.withValues(alpha:0.7)), // Icono de error.
               const SizedBox(height: 20),
               Text(
                 "¡Ups!", // Título genérico para el estado de error.
@@ -107,7 +107,7 @@ class LoadingOrEmptyStateWidget extends StatelessWidget {
               Text(
                 displayErrorMessage, // Mensaje de error.
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onErrorContainer.withOpacity(0.9)),
+                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onErrorContainer.withValues(alpha:0.9)),
               ),
               // Muestra el botón de reintentar si se proporcionó el callback `onRetry`.
               if (onRetry != null) ...[
@@ -137,12 +137,12 @@ class LoadingOrEmptyStateWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(emptyIcon, size: 72, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)), // Icono de estado vacío.
+              Icon(emptyIcon, size: 72, color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.4)), // Icono de estado vacío.
               const SizedBox(height: 20),
               Text(
                 emptyMessage, // Mensaje de estado vacío.
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8)),
+                style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.8)),
               ),
             ],
           ),
