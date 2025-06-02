@@ -287,13 +287,6 @@ class DiabetesLogViewModel extends ChangeNotifier {
       // Esto recalculará índices como el de corrección diario y promedios por período.
       final dateOfLog = DateTime(_selectedLogDate.year, _selectedLogDate.month, _selectedLogDate.day);
       await _calculatorService.updateCalculationsForDay(dateOfLog);
-      // NOTA: La sincronización del MealLog (con sus campos calculados) y de DailyCalculationData
-      // idealmente ocurre dentro de sus respectivos repositorios (LogRepository y CalculationDataRepository)
-      // cuando `_calculatorService.updateCalculationsForDay` llama a sus métodos de guardado.
-
-      // La siguiente sección para sincronizar DailyCalculationData puede ser redundante
-      // si `_calculatorService.updateCalculationsForDay` ya lo hace a través de `CalculationDataRepository`.
-      // Se mantiene aquí como un ejemplo de cómo podría hacerse si no fuera así.
       final prefs = await SharedPreferences.getInstance();
       final bool cloudSaveEnabled = prefs.getBool(cloudSavePreferenceKeyFromLogVM) ?? false;
       final bool isLoggedIn = supabase.auth.currentUser != null;
