@@ -241,10 +241,7 @@ class DiabetesLogViewModel extends ChangeNotifier {
   /// @return Un `Future<bool>` que indica si el guardado fue exitoso.
   Future<bool> saveMealLog(GlobalKey<FormState> formKey) async {
     // Valida el formulario. Si no es válido, no continuar.
-    if (!(formKey.currentState?.validate() ?? false)) {
-      // Se podría exponer un mensaje de error a la UI aquí.
-      return false;
-    }
+    if (!(formKey.currentState?.validate() ?? false)) return false;
     _setSaving(true); // Inicia el estado de guardado.
 
     // Construye el objeto DateTime para la hora de inicio de la comida.

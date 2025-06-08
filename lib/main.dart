@@ -99,8 +99,8 @@ Future<void> main() async {
   // Estas claves son sensibles y normalmente se gestionarían a través de variables de entorno
   // o un sistema de configuración más seguro en un proyecto productivo.
   await Supabase.initialize(
-    anonKey: "",
-    url: "",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwanRkZHl5YnhybHhmamhzd256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyOTQwMDAsImV4cCI6MjA2Mzg3MDAwMH0.ABU_Vfh6h9C8iF1MSxAdTyJXX7LufSpQWX58opMKYQ0",
+    url: "https://fpjtddyybxrlxfjhswnz.supabase.co",
   );
 
   // Obtiene el cliente de Supabase para interactuar con el backend.

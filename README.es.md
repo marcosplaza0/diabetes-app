@@ -41,10 +41,6 @@ Este es el **repositorio de código** de la *App de Gestión de la Diabetes*, de
  ┗ 📜 README.es.md    → Este archivo
 ```
 
-## 🔗 Repositorios relacionados
-
-- [📘 Repositorio de Documentación](https://github.com/marcosplaza0/diabetes-app-docs)
-
 ---
 
 ## ✅ Licencia

@@ -41,10 +41,6 @@ This is the **code repository** for the *Diabetes Management App*, created as a 
  ┗ 📜 README.md       → This file
 ```
 
-## 🔗 Related Repositories
-
-- [📘 Documentation Repository](https://github.com/marcosplaza0/diabetes-app-docs)
-
 ---
 
 ## ✅ License
